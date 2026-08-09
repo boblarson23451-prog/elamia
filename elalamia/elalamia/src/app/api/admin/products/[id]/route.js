@@ -1,0 +1,46 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
+
+export async function PATCH(req, { params }) {
+  try {
+    await requireAdmin();
+  } catch (e) {
+    return NextResponse.json({ error: "unauthorized" }, { status: e.status || 401 });
+  }
+
+  const { id } = await params;
+  const body = await req.json();
+  const fields = [
+    "name_ar", "name_fr", "description_ar", "description_fr",
+    "price", "compare_at_price", "category_id", "image_seed", "stock", "is_active",
+  ];
+
+  const updates = [];
+  const values = [];
+  for (const f of fields) {
+    if (body[f] !== undefined) {
+      updates.push(`${f} = ?`);
+      values.push(body[f]);
+    }
+  }
+  if (updates.length === 0) return NextResponse.json({ error: "no_fields" }, { status: 400 });
+
+  values.push(id);
+  db.prepare(`UPDATE products SET ${updates.join(", ")} WHERE id = ?`).run(...values);
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(req, { params }) {
+  try {
+    await requireAdmin();
+  } catch (e) {
+    return NextResponse.json({ error: "unauthorized" }, { status: e.status || 401 });
+  }
+
+  const { id } = await params;
+  db.prepare("UPDATE products SET is_active = 0 WHERE id = ?").run(id);
+
+  return NextResponse.json({ ok: true });
+}
