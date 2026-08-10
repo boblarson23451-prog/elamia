@@ -18,6 +18,7 @@ export default function ProductForm({ initial, productId, apiBase = "/api/admin/
       compare_at_price: "",
       category_id: "",
       image_seed: "",
+      weight_grams: 500,
       stock: 50,
     }
   );
@@ -47,6 +48,7 @@ export default function ProductForm({ initial, productId, apiBase = "/api/admin/
       compare_at_price: form.compare_at_price ? parseInt(form.compare_at_price, 10) : null,
       category_id: parseInt(form.category_id, 10),
       stock: parseInt(form.stock, 10) || 0,
+      weight_grams: parseInt(form.weight_grams, 10) || 500,
     };
     const url = productId ? `${apiBase}/${productId}` : apiBase;
     const method = productId ? "PATCH" : "POST";
@@ -91,7 +93,7 @@ export default function ProductForm({ initial, productId, apiBase = "/api/admin/
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
           <label className="text-sm font-medium block mb-1">{t("price")} (DA)</label>
           <input type="number" value={form.price} onChange={(e) => update("price", e.target.value)} className={field} style={fieldStyle} />
@@ -103,6 +105,10 @@ export default function ProductForm({ initial, productId, apiBase = "/api/admin/
         <div>
           <label className="text-sm font-medium block mb-1">{t("stock")}</label>
           <input type="number" value={form.stock} onChange={(e) => update("stock", e.target.value)} className={field} style={fieldStyle} />
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1">{t("weightGrams")}</label>
+          <input type="number" value={form.weight_grams} onChange={(e) => update("weight_grams", e.target.value)} className={field} style={fieldStyle} />
         </div>
       </div>
 

@@ -43,7 +43,7 @@ export async function POST(req) {
   }
 
   const body = await req.json();
-  const { name_ar, name_fr, description_ar, description_fr, price, compare_at_price, category_id, image_seed, stock } = body;
+  const { name_ar, name_fr, description_ar, description_fr, price, compare_at_price, category_id, image_seed, stock, weight_grams } = body;
 
   if (!name_ar || !name_fr || !price || !category_id) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
@@ -55,8 +55,8 @@ export async function POST(req) {
 
   const info = db
     .prepare(
-      `INSERT INTO products (slug, name_ar, name_fr, description_ar, description_fr, price, compare_at_price, category_id, vendor_id, image_seed, stock)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO products (slug, name_ar, name_fr, description_ar, description_fr, price, compare_at_price, category_id, vendor_id, image_seed, weight_grams, stock)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       slug,
@@ -69,6 +69,7 @@ export async function POST(req) {
       category_id,
       vendor.id,
       image_seed || slug,
+      weight_grams ?? 500,
       stock ?? 50
     );
 

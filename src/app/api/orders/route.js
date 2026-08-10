@@ -3,6 +3,9 @@ import { db } from "@/lib/db";
 import { getCurrentUser, getBaseUrl } from "@/lib/auth";
 import { createCheckout, isChargilyConfigured } from "@/lib/chargily";
 import { isSofizPayConfigured, buildCibPaymentUrl } from "@/lib/sofizpay";
+import { computeShipping, totalWeightGrams, CARRIERS } from "@/lib/shipping";
+import { getPickupPointById } from "@/lib/pickup-points";
+import { isCodEnabled } from "@/lib/payment-config";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -19,9 +22,35 @@ export async function POST(req) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { fullName, phone, wilaya, address, paymentMethod, locale } = await req.json();
-  if (!fullName || !phone || !wilaya || !address) {
+  const {
+    fullName, phone, wilaya, address, paymentMethod, locale,
+    shippingCarrier, deliveryType = "home", pickupPointId,
+  } = await req.json();
+
+  // For pickup delivery the street address isn't required — the pickup point is.
+  const needsAddress = deliveryType !== "pickup";
+  if (!fullName || !phone || !wilaya || (needsAddress && !address)) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
+  }
+
+  if (!CARRIERS[shippingCarrier]) {
+    return NextResponse.json({ error: "invalid_carrier" }, { status: 400 });
+  }
+
+  let pickupPoint = null;
+  if (deliveryType === "pickup") {
+    pickupPoint = getPickupPointById(pickupPointId);
+    if (!pickupPoint) {
+      return NextResponse.json({ error: "invalid_pickup_point" }, { status: 400 });
+    }
+    // Guard against a pickup point in a different wilaya than the one selected.
+    if (pickupPoint.wilaya_code !== String(wilaya).trim().slice(0, 2)) {
+      return NextResponse.json({ error: "pickup_point_wilaya_mismatch" }, { status: 400 });
+    }
+  }
+
+  if (paymentMethod === "cod" && !isCodEnabled()) {
+    return NextResponse.json({ error: "cod_disabled" }, { status: 400 });
   }
 
   const wantsOnlinePayment = paymentMethod === "chargily" || paymentMethod === "sofizpay";
@@ -34,7 +63,7 @@ export async function POST(req) {
 
   const cartItems = db
     .prepare(
-      `SELECT ci.quantity, p.id as product_id, p.name_ar, p.name_fr, p.price, p.stock, p.vendor_id
+      `SELECT ci.quantity, p.id as product_id, p.name_ar, p.name_fr, p.price, p.stock, p.vendor_id, p.weight_grams
        FROM cart_items ci JOIN products p ON p.id = ci.product_id
        WHERE ci.user_id = ?`
     )
@@ -44,15 +73,37 @@ export async function POST(req) {
     return NextResponse.json({ error: "empty_cart" }, { status: 400 });
   }
 
-  const total = cartItems.reduce((sum, i) => sum + i.quantity * i.price, 0);
+  const subtotal = cartItems.reduce((sum, i) => sum + i.quantity * i.price, 0);
+
+  // Shipping is always recomputed server-side — never trust a client-sent price.
+  const weightGrams = totalWeightGrams(cartItems);
+  const shippingCost = computeShipping({
+    weightGrams,
+    carrier: shippingCarrier,
+    wilaya,
+    deliveryType,
+    subtotal,
+  });
+  if (shippingCost == null) {
+    return NextResponse.json({ error: "shipping_unavailable" }, { status: 400 });
+  }
+
+  const total = subtotal + shippingCost;
 
   const createOrder = db.transaction(() => {
     const info = db
       .prepare(
-        `INSERT INTO orders (user_id, status, total, full_name, phone, wilaya, address, payment_method)
-         VALUES (?, 'pending', ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO orders
+           (user_id, status, subtotal, shipping_cost, total, full_name, phone, wilaya, address,
+            payment_method, shipping_carrier, delivery_type, pickup_point_id)
+         VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(user.id, total, fullName, phone, wilaya, address, paymentMethod || "cod");
+      .run(
+        user.id, subtotal, shippingCost, total, fullName, phone, wilaya,
+        deliveryType === "pickup" ? (pickupPoint.address_fr || "") : address,
+        paymentMethod || "cod", shippingCarrier, deliveryType,
+        deliveryType === "pickup" ? pickupPoint.id : null
+      );
 
     const orderId = info.lastInsertRowid;
 

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useLang } from "@/context/LangContext";
 import { formatPrice } from "@/lib/i18n";
+import { CARRIERS } from "@/lib/shipping";
+import { getPickupPointById } from "@/lib/pickup-points";
 
 const PAYMENT_METHOD_LABELS = { cod: "cod", chargily: "payChargily", sofizpay: "paySofizpay" };
 const PAYMENT_STATUS_STYLE = {
@@ -111,7 +113,38 @@ function OrderDetailContent() {
           <div>{t("phone")}: {order.phone}</div>
           <div>{t("wilaya")}: {order.wilaya}</div>
           <div>{t("paymentMethod")}: {t(PAYMENT_METHOD_LABELS[order.payment_method] || "cod")}</div>
+          <div>
+            {t("shippingMethod")}:{" "}
+            {CARRIERS[order.shipping_carrier]
+              ? (lang === "ar" ? CARRIERS[order.shipping_carrier].label_ar : CARRIERS[order.shipping_carrier].label_fr)
+              : order.shipping_carrier}
+          </div>
+          <div>
+            {t("estimatedDelivery")}:{" "}
+            {CARRIERS[order.shipping_carrier]
+              ? (lang === "ar" ? CARRIERS[order.shipping_carrier].eta_ar : CARRIERS[order.shipping_carrier].eta_fr)
+              : "—"}
+          </div>
+          <div>
+            {t("deliveryType")}: {order.delivery_type === "pickup" ? t("pickupDelivery") : t("homeDelivery")}
+          </div>
         </div>
+
+        {order.delivery_type === "pickup" && (() => {
+          const pp = getPickupPointById(order.pickup_point_id);
+          if (!pp) return null;
+          return (
+            <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: "var(--color-cream)" }}>
+              <div className="font-semibold">📦 {lang === "ar" ? pp.name_ar : pp.name_fr}</div>
+              <div className="text-xs" style={{ color: "var(--color-ink-soft)" }}>
+                {lang === "ar" ? pp.address_ar : pp.address_fr}
+              </div>
+              <div className="text-xs" style={{ color: "var(--color-ink-soft)" }}>
+                🕐 {lang === "ar" ? pp.hours_ar : pp.hours_fr}
+              </div>
+            </div>
+          );
+        })()}
 
         {isOnlinePayment && (
           <div className="flex items-center justify-between mb-4 p-3 rounded-lg" style={{ background: "var(--color-cream)" }}>
@@ -141,9 +174,19 @@ function OrderDetailContent() {
           ))}
         </div>
 
-        <div className="flex justify-between font-bold pt-3 mt-3 border-t" style={{ borderColor: "var(--color-line)" }}>
-          <span>{t("total")}</span>
-          <span className="font-mono">{formatPrice(order.total, lang)}</span>
+        <div className="pt-3 mt-3 border-t" style={{ borderColor: "var(--color-line)" }}>
+          <div className="flex justify-between text-sm" style={{ color: "var(--color-ink-soft)" }}>
+            <span>{t("subtotal")}</span>
+            <span className="font-mono">{formatPrice(order.subtotal || (order.total - (order.shipping_cost || 0)), lang)}</span>
+          </div>
+          <div className="flex justify-between text-sm mb-2" style={{ color: "var(--color-ink-soft)" }}>
+            <span>{t("shippingCost")}</span>
+            <span className="font-mono">{order.shipping_cost === 0 ? t("free") : formatPrice(order.shipping_cost || 0, lang)}</span>
+          </div>
+          <div className="flex justify-between font-bold">
+            <span>{t("total")}</span>
+            <span className="font-mono">{formatPrice(order.total, lang)}</span>
+          </div>
         </div>
       </div>
 
