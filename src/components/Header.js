@@ -36,7 +36,9 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap md:flex-nowrap">
         <Link href="/" className="shrink-0 flex items-baseline gap-1">
           <span
-            className="text-2xl font-extrabold tracking-tight"
+            className="text-2xl font-extrabold leading-none"
+            dir="rtl"
+            lang="ar"
             style={{ fontFamily: "var(--font-display)", color: "#fff" }}
           >
             {t("brand")}

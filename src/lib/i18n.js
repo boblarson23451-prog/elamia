@@ -15,7 +15,8 @@ export const WILAYAS = [
 
 export const DICT = {
   ar: {
-    brand: "ELALAMIA",
+    brand: "العالمية",
+    brandLatin: "ELALAMIA",
     tagline: "كل ما تحتاجه، بأفضل سعر",
     searchPlaceholder: "ابحث عن منتج...",
     home: "الرئيسية",
@@ -188,7 +189,8 @@ export const DICT = {
     becomeVendorCta: "هل تريد بيع منتجاتك معنا؟",
   },
   fr: {
-    brand: "ELALAMIA",
+    brand: "العالمية",
+    brandLatin: "ELALAMIA",
     tagline: "Tout ce qu'il vous faut, au meilleur prix",
     searchPlaceholder: "Rechercher un produit...",
     home: "Accueil",

@@ -8,8 +8,11 @@ export default function Footer() {
     <footer className="mt-16 border-t" style={{ borderColor: "var(--color-line)", background: "var(--color-paper)" }}>
       <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
         <div>
-          <div className="font-extrabold text-lg mb-2" style={{ fontFamily: "var(--font-display)", color: "var(--color-brand)" }}>
+          <div className="font-extrabold text-xl mb-1 leading-none" dir="rtl" lang="ar" style={{ fontFamily: "var(--font-display)", color: "var(--color-brand)" }}>
             {t("brand")}
+          </div>
+          <div className="text-[11px] tracking-widest mb-2" style={{ color: "var(--color-ink-soft)" }}>
+            {t("brandLatin")}
           </div>
           <p style={{ color: "var(--color-ink-soft)" }}>{t("tagline")}</p>
         </div>

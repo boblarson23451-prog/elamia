@@ -7,13 +7,13 @@ import Footer from "@/components/Footer";
 import PWARegister from "@/components/PWARegister";
 
 export const metadata = {
-  title: "ELALAMIA — Le souk d'Algérie en ligne",
+  title: "العالمية ELALAMIA — Le souk d'Algérie en ligne",
   description: "ELALAMIA — marketplace algérienne multi-catégories. Prix cassés, livraison dans les 58 wilayas.",
   manifest: "/manifest.webmanifest",
-  applicationName: "ELALAMIA",
+  applicationName: "العالمية",
   appleWebApp: {
     capable: true,
-    title: "ELALAMIA",
+    title: "العالمية",
     statusBarStyle: "default",
   },
   icons: {
