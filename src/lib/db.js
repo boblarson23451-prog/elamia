@@ -267,15 +267,23 @@ function ensureAdmin() {
   const password = process.env.ADMIN_PASSWORD;
   if (!email || !password) return;
 
-  const existing = db.prepare("SELECT id, role FROM users WHERE email = ?").get(email);
   const hash = bcrypt.hashSync(password, 10);
 
-  if (existing) {
-    db.prepare("UPDATE users SET password_hash = ?, role = 'admin' WHERE id = ?").run(hash, existing.id);
-  } else {
+  // Atomic upsert. A check-then-insert races badly: Next.js runs many build
+  // workers in parallel, each importing this module, and they collided on the
+  // users.email UNIQUE constraint and failed the build. ON CONFLICT makes this
+  // safe under concurrency.
+  try {
     db.prepare(
-      "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')"
+      `INSERT INTO users (name, email, password_hash, role)
+       VALUES (?, ?, ?, 'admin')
+       ON CONFLICT(email) DO UPDATE SET
+         password_hash = excluded.password_hash,
+         role = 'admin'`
     ).run(process.env.ADMIN_NAME || "Admin", email, hash);
+  } catch (err) {
+    // Never let admin provisioning break app startup or the build.
+    console.warn("[ELALAMIA] ensureAdmin skipped:", err.message);
   }
 }
 
