@@ -38,7 +38,9 @@ export default function LoginPage() {
   return (
     <div className="max-w-sm mx-auto px-4 py-16">
       <h1 className="text-xl font-bold mb-1 text-center" style={{ color: "var(--color-ink)" }}>{t("login")}</h1>
-      <p className="text-xs text-center mb-6" style={{ color: "var(--color-ink-soft)" }}>{t("demoAccountNote")}</p>
+      {process.env.NODE_ENV !== "production" && (
+        <p className="text-xs text-center mb-6" style={{ color: "var(--color-ink-soft)" }}>{t("demoAccountNote")}</p>
+      )}
 
       <form onSubmit={submit} className="flex flex-col gap-3">
         <input

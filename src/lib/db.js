@@ -3,7 +3,11 @@ import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// DATA_DIR can be pointed at a mounted persistent volume (e.g. /data on
+// Railway) via the DATA_DIR env var. Without a persistent volume the SQLite
+// file lives on the container's ephemeral disk and is DESTROYED on every
+// deploy or restart — see README "Going live".
+const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_PATH = path.join(DATA_DIR, "elalamia.sqlite");
@@ -194,15 +198,39 @@ function seedIfEmpty() {
   });
   insertMany(products);
 
-  // Demo admin + demo customer account (password: elalamia123)
-  const passwordHash = bcrypt.hashSync("elalamia123", 10);
+  // --- Accounts ---
+  // In production we do NOT create demo accounts with a published password.
+  // Instead an admin is created from ADMIN_EMAIL / ADMIN_PASSWORD env vars.
+  const isProd = process.env.NODE_ENV === "production";
   const insertUser = db.prepare(
     "INSERT INTO users (name, email, password_hash, role, wilaya) VALUES (?, ?, ?, ?, ?)"
   );
+
+  if (isProd) {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (adminEmail && adminPassword) {
+      insertUser.run(
+        process.env.ADMIN_NAME || "Admin",
+        adminEmail.toLowerCase().trim(),
+        bcrypt.hashSync(adminPassword, 10),
+        "admin",
+        null
+      );
+    } else {
+      console.warn(
+        "[ELALAMIA] No ADMIN_EMAIL/ADMIN_PASSWORD set - no admin account created. " +
+        "Set them and restart, or register normally and promote the user in the database."
+      );
+    }
+    return; // no demo customer/vendor/product-assignment in production
+  }
+
+  // --- Development-only demo accounts (password: elalamia123) ---
+  const passwordHash = bcrypt.hashSync("elalamia123", 10);
   insertUser.run("Admin ELALAMIA", "admin@elalamia.dz", passwordHash, "admin", "Alger");
   insertUser.run("Client Démo", "client@elalamia.dz", passwordHash, "customer", "Tlemcen");
 
-  // Demo approved vendor, so the vendor dashboard/storefront badges have something real to show
   const vendorUserInfo = insertUser.run("Boutique Sahara", "vendeur@elalamia.dz", passwordHash, "vendor", "Oran");
   const vendorUserId = vendorUserInfo.lastInsertRowid;
   const vendorInfo = db
@@ -221,7 +249,6 @@ function seedIfEmpty() {
     );
   const demoVendorId = vendorInfo.lastInsertRowid;
 
-  // Assign a handful of seeded products to the demo vendor's store (rest stay on the official ELALAMIA store)
   const vendorProductSlugs = ["ecouteurs-bluetooth-tws", "montre-connectee-sport", "chargeur-rapide-usb-c", "enceinte-bluetooth-portable", "powerbank-20000mah"];
   const assignVendor = db.prepare("UPDATE products SET vendor_id = ? WHERE slug = ?");
   for (const slug of vendorProductSlugs) assignVendor.run(demoVendorId, slug);
