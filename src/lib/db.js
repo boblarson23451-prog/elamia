@@ -301,3 +301,22 @@ function ensureAdmin() {
 }
 
 if (!IS_BUILD_PHASE) ensureAdmin();
+
+// Startup diagnostic: makes it obvious in the deploy logs whether the
+// database is on a persistent volume or an ephemeral container disk.
+// If "seeded fresh" appears on EVERY deploy, data is NOT persisting.
+if (!IS_BUILD_PHASE) {
+  try {
+    const counts = {
+      products: db.prepare("SELECT COUNT(*) c FROM products").get().c,
+      orders: db.prepare("SELECT COUNT(*) c FROM orders").get().c,
+      users: db.prepare("SELECT COUNT(*) c FROM users").get().c,
+    };
+    console.log(
+      `[ELALAMIA] db=${DB_PATH} persisted=${counts.orders > 0 || counts.users > 1 ? "likely" : "unknown"} ` +
+      `products=${counts.products} orders=${counts.orders} users=${counts.users}`
+    );
+  } catch (err) {
+    console.warn("[ELALAMIA] startup diagnostic failed:", err.message);
+  }
+}
