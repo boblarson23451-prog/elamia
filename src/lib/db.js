@@ -8,7 +8,7 @@ import bcrypt from "bcryptjs";
 // file lives on the container's ephemeral disk and is DESTROYED on every
 // deploy or restart — see README "Going live".
 const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(/*turbopackIgnore: true*/ DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_PATH = path.join(DATA_DIR, "elalamia.sqlite");
 
@@ -139,6 +139,11 @@ ensureColumn("orders", "subtotal", "subtotal INTEGER NOT NULL DEFAULT 0");
 ensureColumn("products", "image_urls", "image_urls TEXT");
 ensureColumn("products", "supplier_ref", "supplier_ref TEXT");
 
+/** True while `next build` is collecting page data. Build workers import this
+ * module in parallel; letting them all seed/provision races on UNIQUE
+ * constraints and fails the build. Nothing needs writing at build time. */
+const IS_BUILD_PHASE = process.env.NEXT_PHASE === "phase-production-build";
+
 function seedIfEmpty() {
   const { count } = db.prepare("SELECT COUNT(*) as count FROM categories").get();
   if (count > 0) return;
@@ -245,7 +250,15 @@ function seedIfEmpty() {
   for (const slug of vendorProductSlugs) assignVendor.run(demoVendorId, slug);
 }
 
-seedIfEmpty();
+if (!IS_BUILD_PHASE) {
+  try {
+    // A single IMMEDIATE transaction serialises concurrent seeders: the first
+    // takes the write lock, the rest then see count > 0 and no-op.
+    db.transaction(seedIfEmpty).immediate();
+  } catch (err) {
+    console.warn("[ELALAMIA] seed skipped:", err.message);
+  }
+}
 
 
 /**
@@ -287,4 +300,4 @@ function ensureAdmin() {
   }
 }
 
-ensureAdmin();
+if (!IS_BUILD_PHASE) ensureAdmin();
