@@ -1,0 +1,76 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { requireVendor } from "@/lib/auth";
+
+function slugify(text) {
+  return (
+    text
+      .toString()
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || `produit-${Date.now()}`
+  );
+}
+
+export async function GET() {
+  let vendor;
+  try {
+    ({ vendor } = await requireVendor());
+  } catch (e) {
+    return NextResponse.json({ error: "unauthorized" }, { status: e.status || 401 });
+  }
+
+  const products = db
+    .prepare(
+      `SELECT p.*, c.name_ar as category_name_ar, c.name_fr as category_name_fr
+       FROM products p JOIN categories c ON c.id = p.category_id
+       WHERE p.vendor_id = ?
+       ORDER BY p.created_at DESC`
+    )
+    .all(vendor.id);
+
+  return NextResponse.json({ products });
+}
+
+export async function POST(req) {
+  let vendor;
+  try {
+    ({ vendor } = await requireVendor());
+  } catch (e) {
+    return NextResponse.json({ error: "unauthorized" }, { status: e.status || 401 });
+  }
+
+  const body = await req.json();
+  const { name_ar, name_fr, description_ar, description_fr, price, compare_at_price, category_id, image_seed, stock } = body;
+
+  if (!name_ar || !name_fr || !price || !category_id) {
+    return NextResponse.json({ error: "missing_fields" }, { status: 400 });
+  }
+
+  let slug = slugify(name_fr);
+  const existsSlug = db.prepare("SELECT id FROM products WHERE slug = ?").get(slug);
+  if (existsSlug) slug = `${slug}-${Date.now().toString().slice(-5)}`;
+
+  const info = db
+    .prepare(
+      `INSERT INTO products (slug, name_ar, name_fr, description_ar, description_fr, price, compare_at_price, category_id, vendor_id, image_seed, stock)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      slug,
+      name_ar,
+      name_fr,
+      description_ar || "",
+      description_fr || "",
+      price,
+      compare_at_price || null,
+      category_id,
+      vendor.id,
+      image_seed || slug,
+      stock ?? 50
+    );
+
+  return NextResponse.json({ id: info.lastInsertRowid, slug });
+}

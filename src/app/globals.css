@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+:root {
+  /* ELALAMIA token system — souk-market palette, not the generic AI cream/terracotta default */
+  --color-cream: #FBF6EA;       /* page background — warm sand paper */
+  --color-paper: #FFFEF9;       /* card surfaces */
+  --color-ink: #1C2A22;         /* primary text — deep charcoal-green */
+  --color-ink-soft: #4A5A50;    /* secondary text */
+  --color-brand: #0F7A4B;       /* trust green — header, links, success */
+  --color-brand-dark: #0B5C39;
+  --color-accent: #DD4B2E;      /* souk-stamp red — CTAs, discount stamps */
+  --color-accent-dark: #B93A22;
+  --color-gold: #E8A33D;        /* price tickets, ratings */
+  --color-line: #E7DCC4;        /* borders, dividers, ticket perforation */
+  --font-display: 'Tajawal', 'Segoe UI', sans-serif;
+  --font-body: 'Tajawal', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+@theme inline {
+  --color-cream: var(--color-cream);
+  --color-paper: var(--color-paper);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-brand: var(--color-brand);
+  --color-brand-dark: var(--color-brand-dark);
+  --color-accent: var(--color-accent);
+  --color-accent-dark: var(--color-accent-dark);
+  --color-gold: var(--color-gold);
+  --color-line: var(--color-line);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+[dir="rtl"] body {
+  font-family: var(--font-body);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Signature element: the souk price ticket */
+.price-ticket {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--font-mono);
+  background: var(--color-paper);
+  border: 1.5px dashed var(--color-line);
+  border-radius: 4px;
+  padding: 3px 10px;
+}
+
+.stamp-badge {
+  font-family: var(--font-mono);
+  background: var(--color-accent);
+  color: var(--color-paper);
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transform: rotate(-6deg);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.08);
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

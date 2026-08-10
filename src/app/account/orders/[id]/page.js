@@ -1,0 +1,138 @@
+"use client";
+
+import { useEffect, useState, Suspense } from "react";
+import Link from "next/link";
+import { useParams, useSearchParams } from "next/navigation";
+import { useLang } from "@/context/LangContext";
+import { formatPrice } from "@/lib/i18n";
+
+const PAYMENT_METHOD_LABELS = { cod: "cod", chargily: "payChargily", sofizpay: "paySofizpay" };
+const PAYMENT_STATUS_STYLE = {
+  paid: { key: "paymentPaid", color: "var(--color-brand)" },
+  unpaid: { key: "paymentUnpaid", color: "var(--color-gold)" },
+  failed: { key: "paymentFailed", color: "var(--color-accent)" },
+};
+
+function OrderDetailContent() {
+  const { t, lang } = useLang();
+  const { id } = useParams();
+  const searchParams = useSearchParams();
+  const success = searchParams.get("success");
+  const paymentError = searchParams.get("payment_error");
+  const [data, setData] = useState(null);
+  const [checking, setChecking] = useState(false);
+
+  const load = () => {
+    fetch(`/api/orders/${id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setData);
+  };
+
+  useEffect(load, [id]);
+
+  // Auto-check payment status once when landing back from an online gateway.
+  useEffect(() => {
+    if (success && data?.order && data.order.payment_method !== "cod" && data.order.payment_status === "unpaid") {
+      checkStatus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [success, data?.order?.id]);
+
+  const checkStatus = async () => {
+    setChecking(true);
+    await fetch(`/api/orders/${id}/sync-payment`, { method: "POST" });
+    setChecking(false);
+    load();
+  };
+
+  if (!data) return <div className="max-w-2xl mx-auto px-4 py-16 text-center">...</div>;
+
+  const { order, items } = data;
+  const isOnlinePayment = order.payment_method !== "cod";
+  const statusInfo = PAYMENT_STATUS_STYLE[order.payment_status] || PAYMENT_STATUS_STYLE.unpaid;
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      {success && !paymentError && (
+        <div
+          className="rounded-xl p-5 mb-6 text-center"
+          style={{ background: "var(--color-brand)", color: "#fff" }}
+        >
+          <p className="text-2xl mb-1">✓</p>
+          <p className="font-bold">{t("orderSuccess")}</p>
+          <p className="text-sm opacity-90 mt-1">{t("orderSuccessDesc")} #{order.id}</p>
+        </div>
+      )}
+
+      {paymentError && (
+        <div
+          className="rounded-xl p-5 mb-6 text-center"
+          style={{ background: "var(--color-accent)", color: "#fff" }}
+        >
+          <p className="font-bold">{t("paymentErrorNote")}</p>
+        </div>
+      )}
+
+      <div className="rounded-xl border p-5" style={{ background: "var(--color-paper)", borderColor: "var(--color-line)" }}>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="font-bold" style={{ color: "var(--color-ink)" }}>{t("orderNumber")} #{order.id}</h1>
+          <span className="text-xs font-semibold px-2 py-1 rounded-full text-white" style={{ background: "var(--color-brand)" }}>
+            {t(order.status)}
+          </span>
+        </div>
+
+        <div className="text-sm mb-4 grid grid-cols-2 gap-2" style={{ color: "var(--color-ink-soft)" }}>
+          <div>{t("fullName")}: {order.full_name}</div>
+          <div>{t("phone")}: {order.phone}</div>
+          <div>{t("wilaya")}: {order.wilaya}</div>
+          <div>{t("paymentMethod")}: {t(PAYMENT_METHOD_LABELS[order.payment_method] || "cod")}</div>
+        </div>
+
+        {isOnlinePayment && (
+          <div className="flex items-center justify-between mb-4 p-3 rounded-lg" style={{ background: "var(--color-cream)" }}>
+            <div className="text-sm">
+              {t("paymentStatus")}:{" "}
+              <span className="font-semibold" style={{ color: statusInfo.color }}>{t(statusInfo.key)}</span>
+            </div>
+            {order.payment_status !== "paid" && (
+              <button
+                onClick={checkStatus}
+                disabled={checking}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border disabled:opacity-50"
+                style={{ borderColor: "var(--color-brand)", color: "var(--color-brand)" }}
+              >
+                {checking ? "..." : t("checkPaymentStatus")}
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2 border-t pt-3" style={{ borderColor: "var(--color-line)" }}>
+          {items.map((it) => (
+            <div key={it.id} className="flex justify-between text-sm">
+              <span>{it.quantity}× {lang === "ar" ? it.name_ar : it.name_fr}</span>
+              <span className="font-mono">{formatPrice(it.price * it.quantity, lang)}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-between font-bold pt-3 mt-3 border-t" style={{ borderColor: "var(--color-line)" }}>
+          <span>{t("total")}</span>
+          <span className="font-mono">{formatPrice(order.total, lang)}</span>
+        </div>
+      </div>
+
+      <Link href="/" className="block text-center mt-6 text-sm font-semibold" style={{ color: "var(--color-brand)" }}>
+        {t("backHome")}
+      </Link>
+    </div>
+  );
+}
+
+export default function OrderDetailPage() {
+  return (
+    <Suspense fallback={null}>
+      <OrderDetailContent />
+    </Suspense>
+  );
+}
