@@ -211,22 +211,9 @@ function seedIfEmpty() {
   );
 
   if (isProd) {
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPassword = process.env.ADMIN_PASSWORD;
-    if (adminEmail && adminPassword) {
-      insertUser.run(
-        process.env.ADMIN_NAME || "Admin",
-        adminEmail.toLowerCase().trim(),
-        bcrypt.hashSync(adminPassword, 10),
-        "admin",
-        null
-      );
-    } else {
-      console.warn(
-        "[ELALAMIA] No ADMIN_EMAIL/ADMIN_PASSWORD set - no admin account created. " +
-        "Set them and restart, or register normally and promote the user in the database."
-      );
-    }
+    // Admin provisioning happens in ensureAdmin() below, which runs on EVERY
+    // boot rather than only on first seed - otherwise attaching a persistent
+    // volume later would leave you locked out with no way to create an admin.
     return; // no demo customer/vendor/product-assignment in production
   }
 
@@ -259,3 +246,37 @@ function seedIfEmpty() {
 }
 
 seedIfEmpty();
+
+
+/**
+ * Ensures an admin account exists, on every boot, from env vars.
+ *
+ *   ADMIN_EMAIL     - login email for the admin
+ *   ADMIN_PASSWORD  - password (change it after first login)
+ *   ADMIN_NAME      - optional display name
+ *
+ * If the account already exists, its password is re-synced to ADMIN_PASSWORD.
+ * That makes the env var an effective password-reset lever if you ever get
+ * locked out - but it also means changing the password in-app would be undone
+ * on the next restart while ADMIN_PASSWORD is set to something else. Keep the
+ * env var in sync, or unset it once you have a working admin and a persistent
+ * database.
+ */
+function ensureAdmin() {
+  const email = process.env.ADMIN_EMAIL?.toLowerCase().trim();
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) return;
+
+  const existing = db.prepare("SELECT id, role FROM users WHERE email = ?").get(email);
+  const hash = bcrypt.hashSync(password, 10);
+
+  if (existing) {
+    db.prepare("UPDATE users SET password_hash = ?, role = 'admin' WHERE id = ?").run(hash, existing.id);
+  } else {
+    db.prepare(
+      "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')"
+    ).run(process.env.ADMIN_NAME || "Admin", email, hash);
+  }
+}
+
+ensureAdmin();
