@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS products (
   category_id INTEGER NOT NULL REFERENCES categories(id),
   vendor_id INTEGER REFERENCES vendors(id),
   image_seed TEXT NOT NULL,
+  image_urls TEXT,
+  supplier_ref TEXT,
   weight_grams INTEGER NOT NULL DEFAULT 500,
   stock INTEGER NOT NULL DEFAULT 50,
   rating REAL NOT NULL DEFAULT 4.5,
@@ -134,6 +136,8 @@ ensureColumn("orders", "shipping_cost", "shipping_cost INTEGER NOT NULL DEFAULT 
 ensureColumn("orders", "delivery_type", "delivery_type TEXT NOT NULL DEFAULT 'home'");
 ensureColumn("orders", "pickup_point_id", "pickup_point_id TEXT");
 ensureColumn("orders", "subtotal", "subtotal INTEGER NOT NULL DEFAULT 0");
+ensureColumn("products", "image_urls", "image_urls TEXT");
+ensureColumn("products", "supplier_ref", "supplier_ref TEXT");
 
 function seedIfEmpty() {
   const { count } = db.prepare("SELECT COUNT(*) as count FROM categories").get();

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLang } from "@/context/LangContext";
 import { useCart } from "@/context/CartContext";
-import ProductImage from "./ProductImage";
+import ProductImage, { parseImageUrls } from "./ProductImage";
 import { PriceTicket, DiscountStamp } from "./PriceTicket";
 
 export default function ProductDetailClient({ product }) {
@@ -13,6 +13,8 @@ export default function ProductDetailClient({ product }) {
   const { addToCart } = useCart();
   const router = useRouter();
   const [qty, setQty] = useState(1);
+  const gallery = parseImageUrls(product.image_urls);
+  const [activeImg, setActiveImg] = useState(0);
   const [status, setStatus] = useState("idle");
 
   const name = field(product, "name");
@@ -42,11 +44,33 @@ export default function ProductDetailClient({ product }) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
-        <div className="relative rounded-xl overflow-hidden aspect-square" style={{ background: "var(--color-paper)" }}>
-          <ProductImage seed={product.image_seed} alt={name} className="w-full h-full object-cover" />
-          <div className="absolute top-3 start-3">
-            <DiscountStamp price={product.price} comparePrice={product.compare_at_price} />
+        <div>
+          <div className="relative rounded-xl overflow-hidden aspect-square" style={{ background: "var(--color-paper)" }}>
+            <ProductImage
+              seed={product.image_seed}
+              urls={gallery.length ? gallery[activeImg] : null}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-3 start-3">
+              <DiscountStamp price={product.price} comparePrice={product.compare_at_price} />
+            </div>
           </div>
+          {gallery.length > 1 && (
+            <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+              {gallery.slice(0, 8).map((u, i) => (
+                <button
+                  key={u + i}
+                  onClick={() => setActiveImg(i)}
+                  className="shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2"
+                  style={{ borderColor: i === activeImg ? "var(--color-accent)" : "var(--color-line)" }}
+                  aria-label={`Image ${i + 1}`}
+                >
+                  <ProductImage seed={product.image_seed} urls={u} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>

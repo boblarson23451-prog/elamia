@@ -36,6 +36,7 @@ export default function ProductCard({ product }) {
       <div className="relative aspect-square overflow-hidden" style={{ background: "var(--color-cream)" }}>
         <ProductImage
           seed={product.image_seed}
+          urls={product.image_urls}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />

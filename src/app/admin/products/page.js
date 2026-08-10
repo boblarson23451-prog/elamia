@@ -25,8 +25,15 @@ export default function AdminProductsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <h1 className="text-xl font-bold" style={{ color: "var(--color-ink)" }}>{t("manageProducts")}</h1>
+        <Link
+          href="/admin/products/import"
+          className="rounded-lg px-4 py-2 text-sm font-semibold border me-2"
+          style={{ borderColor: "var(--color-brand)", color: "var(--color-brand)" }}
+        >
+          ⬆ Import CSV
+        </Link>
         <Link
           href="/admin/products/new"
           className="rounded-lg px-4 py-2 text-sm font-semibold text-white"

@@ -18,6 +18,8 @@ export default function ProductForm({ initial, productId, apiBase = "/api/admin/
       compare_at_price: "",
       category_id: "",
       image_seed: "",
+      image_urls: "",
+      supplier_ref: "",
       weight_grams: 500,
       stock: 50,
     }
@@ -122,7 +124,17 @@ export default function ProductForm({ initial, productId, apiBase = "/api/admin/
           </select>
         </div>
         <div>
-          <label className="text-sm font-medium block mb-1">Image seed</label>
+          <label className="text-sm font-medium block mb-1">Réf. fournisseur</label>
+          <input
+            value={form.supplier_ref || ""}
+            onChange={(e) => update("supplier_ref", e.target.value)}
+            placeholder="ex: 1047929587876"
+            className={field}
+            style={fieldStyle}
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium block mb-1">Image seed (secours)</label>
           <input
             value={form.image_seed}
             onChange={(e) => update("image_seed", e.target.value)}
@@ -131,6 +143,22 @@ export default function ProductForm({ initial, productId, apiBase = "/api/admin/
             style={fieldStyle}
           />
         </div>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium block mb-1">URLs des images</label>
+        <textarea
+          value={form.image_urls || ""}
+          onChange={(e) => update("image_urls", e.target.value)}
+          rows={3}
+          placeholder={"https://.../photo1.jpg\nhttps://.../photo2.jpg"}
+          className={field}
+          style={fieldStyle}
+        />
+        <p className="text-xs mt-1" style={{ color: "var(--color-ink-soft)" }}>
+          Une URL par ligne. La première sert d'image principale. Si vide ou inaccessible, une image de
+          remplacement est affichée.
+        </p>
       </div>
 
       {error && <p className="text-sm" style={{ color: "var(--color-accent)" }}>{error}</p>}

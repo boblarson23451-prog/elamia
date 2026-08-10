@@ -19,7 +19,7 @@ export async function PATCH(req, { params }) {
   const body = await req.json();
   const fields = [
     "name_ar", "name_fr", "description_ar", "description_fr",
-    "price", "compare_at_price", "category_id", "image_seed", "weight_grams", "stock", "is_active",
+    "price", "compare_at_price", "category_id", "image_seed", "image_urls", "supplier_ref", "weight_grams", "stock", "is_active",
   ];
 
   const updates = [];
