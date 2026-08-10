@@ -4,10 +4,32 @@ import { CartProvider } from "@/context/CartContext";
 import Header from "@/components/Header";
 import CategoryNav from "@/components/CategoryNav";
 import Footer from "@/components/Footer";
+import PWARegister from "@/components/PWARegister";
 
 export const metadata = {
   title: "ELALAMIA — Le souk d'Algérie en ligne",
-  description: "ELALAMIA — marketplace algérienne multi-catégories. Prix cassés, livraison dans les 58 wilayas, paiement à la livraison.",
+  description: "ELALAMIA — marketplace algérienne multi-catégories. Prix cassés, livraison dans les 58 wilayas.",
+  manifest: "/manifest.webmanifest",
+  applicationName: "ELALAMIA",
+  appleWebApp: {
+    capable: true,
+    title: "ELALAMIA",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
+};
+
+export const viewport = {
+  themeColor: "#0F7A4B",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }) {
@@ -28,6 +50,7 @@ export default function RootLayout({ children }) {
             <CategoryNav />
             <main className="flex-1">{children}</main>
             <Footer />
+            <PWARegister />
           </CartProvider>
         </LangProvider>
       </body>
