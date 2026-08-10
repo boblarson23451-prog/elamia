@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getCurrentUser, getBaseUrl } from "@/lib/auth";
 import { createCheckout, isChargilyConfigured } from "@/lib/chargily";
-import { createCibTransaction, isSofizPayConfigured } from "@/lib/sofizpay";
+import { isSofizPayConfigured, buildCibPaymentUrl } from "@/lib/sofizpay";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -102,14 +102,15 @@ export async function POST(req) {
 
   if (paymentMethod === "sofizpay") {
     try {
-      const { transactionId, paymentUrl } = await createCibTransaction({
+      const paymentUrl = buildCibPaymentUrl({
         amount: total,
         orderId,
         fullName,
         phone,
+        email: user.email,
         baseUrl,
+        locale: locale === "fr" ? "fr" : "ar",
       });
-      db.prepare("UPDATE orders SET sofizpay_transaction_id = ? WHERE id = ?").run(transactionId, orderId);
       return NextResponse.json({ orderId, checkoutUrl: paymentUrl });
     } catch {
       return NextResponse.json({ orderId, checkoutError: true });

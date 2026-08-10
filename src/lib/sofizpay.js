@@ -1,98 +1,107 @@
 /**
- * SofizPay adapter — generates hosted CIB/Dahabia payment links and checks
- * their status, following the request/response shape documented in
- * SofizPay's official SDKs (see docs.sofizpay.com and
- * github.com/kenandarabeh/sofizpay-sdk-python).
+ * SofizPay adapter — CIB/Edahabiya hosted payments, built directly against
+ * SofizPay's official docs (docs.sofizpay.com/en/api/v1/endpoints/...),
+ * confirmed by screenshot on 2026-08-10:
  *
- * IMPORTANT — before this goes live, you must fill in:
- *   SOFIZPAY_API_BASE_URL   — the real API base URL from your SofizPay
- *                             merchant dashboard (docs.sofizpay.com). We
- *                             could not independently verify this URL from
- *                             public docs, so it is intentionally left
- *                             blank rather than guessed.
- *   SOFIZPAY_MERCHANT_ACCOUNT — your merchant Stellar public key (starts with 'G'),
- *                             issued when your merchant registration
- *                             (registre de commerce, NIF) is approved.
- *   SOFIZPAY_API_KEY        — your API key/secret, if SofizPay requires one
- *                             for server-to-server calls (check your dashboard).
+ *   Create payment:  GET https://sofizpay.com/make-cib-transaction/
+ *     Query params: account, amount, full_name, phone, email,
+ *                   return_url (optional), webhook_url (optional),
+ *                   invoice_id (optional), language (optional, 'ar' default)
  *
- * Note on how funds move: per SofizPay's own documentation, payments settle
- * as "DZT" — a token on the Stellar blockchain network representing DZD —
- * to your merchant Stellar account, not as a direct bank deposit. Make sure
- * you understand and are comfortable with that settlement mechanism (and
- * its legal standing under Algerian law) before enabling this in production.
+ *   Check status:    GET https://sofizpay.com/cib-transaction-check/
+ *     Query params: order_number (required)
+ *     Success shape: { order_number, orderStatus, errorCode, errorMessage,
+ *                      actionCodeDescription, respCode_desc, respCode,
+ *                      destination_account, Amount }
+ *
+ * IMPORTANT gaps we could not confirm from the docs (be aware before going
+ * fully live):
+ *   - The exact shape of what SofizPay appends to `return_url` / sends to
+ *     `webhook_url` after a payment attempt isn't fully documented in what
+ *     we've seen. To stay safe, this adapter never trusts an incoming
+ *     redirect or webhook payload's status directly — it only uses them as
+ *     a *trigger* to re-check status via the authoritative
+ *     cib-transaction-check endpoint, using whatever order_number we can
+ *     find (see src/app/api/webhooks/sofizpay/route.js and the order detail
+ *     page). This is standard defense-in-depth even when signatures ARE
+ *     available, and is essential here since we don't have a confirmed
+ *     signature-verification scheme to check webhook authenticity.
+ *   - Because we don't create-and-store a transaction id up front (this API
+ *     has no such step — you just build the URL), we rely on `invoice_id`
+ *     (set to our internal order id) to link a SofizPay order_number back
+ *     to the right order once we learn about it.
+ *
+ * Required env vars:
+ *   SOFIZPAY_MERCHANT_ACCOUNT — your merchant Stellar public key (starts with 'G')
+ *
+ * Reminder: per SofizPay's own docs, payments settle as "DZT", a token on
+ * the Stellar blockchain network representing DZD, to your merchant
+ * account — not a direct bank deposit. Confirm this is legally acceptable
+ * for your business before enabling SOFIZPAY_SANDBOX=false.
  */
 
-const SOFIZPAY_API_BASE_URL = process.env.SOFIZPAY_API_BASE_URL || "";
 const SOFIZPAY_MERCHANT_ACCOUNT = process.env.SOFIZPAY_MERCHANT_ACCOUNT || "";
-const SOFIZPAY_API_KEY = process.env.SOFIZPAY_API_KEY || "";
 const SOFIZPAY_SANDBOX = process.env.SOFIZPAY_SANDBOX !== "false"; // default to sandbox until explicitly turned off
 
-export function isSofizPayConfigured() {
-  return Boolean(SOFIZPAY_API_BASE_URL && SOFIZPAY_MERCHANT_ACCOUNT);
-}
+const CREATE_URL = "https://sofizpay.com/make-cib-transaction/";
+const STATUS_URL = "https://sofizpay.com/cib-transaction-check/";
 
-function authHeaders() {
-  const headers = { "Content-Type": "application/json" };
-  if (SOFIZPAY_API_KEY) headers.Authorization = `Bearer ${SOFIZPAY_API_KEY}`;
-  return headers;
+export function isSofizPayConfigured() {
+  return Boolean(SOFIZPAY_MERCHANT_ACCOUNT);
 }
 
 /**
- * Creates a hosted CIB/Dahabia payment link for an order and returns the
- * URL to redirect the customer to, plus the transaction id to store and
- * later verify server-side.
+ * Builds the hosted CIB/Edahabiya payment URL to redirect the customer to.
+ * No network call needed — per SofizPay's docs this is a direct GET link
+ * you construct yourself, not a "create then get an id back" API call.
  */
-export async function createCibTransaction({ amount, orderId, fullName, phone, email, baseUrl }) {
+export function buildCibPaymentUrl({ amount, orderId, fullName, phone, email, baseUrl, locale = "ar" }) {
   if (!isSofizPayConfigured()) {
     throw new Error("sofizpay_not_configured");
   }
 
-  const endpoint = `${SOFIZPAY_API_BASE_URL}/${SOFIZPAY_SANDBOX ? "sandbox/" : ""}cib/transactions`;
-
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({
-      account: SOFIZPAY_MERCHANT_ACCOUNT,
-      amount,
-      full_name: fullName,
-      phone,
-      email: email || undefined,
-      memo: `Commande #${orderId}`.slice(0, 28),
-      return_url: `${baseUrl}/account/orders/${orderId}?success=1`,
-      redirect: "no",
-    }),
+  const params = new URLSearchParams({
+    account: SOFIZPAY_MERCHANT_ACCOUNT,
+    amount: String(amount),
+    full_name: fullName,
+    phone,
+    return_url: `${baseUrl}/account/orders/${orderId}?success=1&gateway=sofizpay`,
+    webhook_url: `${baseUrl}/api/webhooks/sofizpay`,
+    invoice_id: String(orderId),
+    language: locale === "fr" ? "fr" : "ar",
   });
+  if (email) params.set("email", email);
 
-  const data = await res.json();
-  if (!res.ok || !data?.success) {
-    throw new Error(data?.error || "sofizpay_transaction_failed");
-  }
-
-  return {
-    transactionId: data.data.cib_transaction_id,
-    paymentUrl: data.data.payment_url,
-  };
+  return `${CREATE_URL}?${params.toString()}`;
+  // Note: SOFIZPAY_SANDBOX currently has no effect here because the docs we
+  // could confirm don't show a separate sandbox host/path for this
+  // endpoint. If your SofizPay dashboard shows a sandbox variant, update
+  // CREATE_URL/STATUS_URL above accordingly before relying on this flag.
 }
 
-/** Polls SofizPay for the current status of a previously-created CIB transaction. */
-export async function checkCibStatus(transactionId) {
-  if (!isSofizPayConfigured()) return null;
+/** Authoritative status check — always call this rather than trusting a
+ * redirect or webhook payload directly. */
+export async function checkCibStatus(orderNumber) {
+  if (!orderNumber) return null;
 
-  const endpoint = `${SOFIZPAY_API_BASE_URL}/${SOFIZPAY_SANDBOX ? "sandbox/" : ""}cib/transactions/${transactionId}`;
-  const res = await fetch(endpoint, { headers: authHeaders() });
+  const url = `${STATUS_URL}?${new URLSearchParams({ order_number: orderNumber }).toString()}`;
+  const res = await fetch(url);
   if (!res.ok) return null;
 
-  const data = await res.json();
-  if (!data?.success) return null;
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    return null;
+  }
 
-  return data.data?.status || null;
+  return data || null;
 }
 
-/** Maps a SofizPay CIB transaction status to our internal payment_status values. */
-export function mapCibStatus(sofizpayStatus) {
-  if (sofizpayStatus === "success" || sofizpayStatus === "paid") return "paid";
-  if (sofizpayStatus === "failed" || sofizpayStatus === "expired" || sofizpayStatus === "cancelled") return "failed";
+/** Maps a SofizPay orderStatus/respCode to our internal payment_status values. */
+export function mapCibStatus(statusResponse) {
+  if (!statusResponse) return "unpaid";
+  if (statusResponse.respCode === "00" || statusResponse.orderStatus === 2) return "paid";
+  if (statusResponse.errorCode && statusResponse.errorCode !== 0) return "failed";
   return "unpaid";
 }

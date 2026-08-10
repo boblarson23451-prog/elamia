@@ -20,9 +20,24 @@ export async function POST(req, { params }) {
   if (order.payment_method === "chargily" && order.chargily_checkout_id) {
     const checkout = await getCheckout(order.chargily_checkout_id);
     if (checkout) paymentStatus = mapCheckoutStatus(checkout.status);
-  } else if (order.payment_method === "sofizpay" && order.sofizpay_transaction_id) {
-    const status = await checkCibStatus(order.sofizpay_transaction_id);
-    if (status) paymentStatus = mapCibStatus(status);
+  } else if (order.payment_method === "sofizpay") {
+    // We only know SofizPay's order_number once their webhook/redirect tells
+    // us — until then there's nothing authoritative to poll.
+    if (!order.sofizpay_transaction_id) {
+      return NextResponse.json({ payment_status: order.payment_status, pending_confirmation: true });
+    }
+    const statusResponse = await checkCibStatus(order.sofizpay_transaction_id);
+    if (statusResponse) {
+      const mapped = mapCibStatus(statusResponse);
+      // Guard against underpayment before accepting a 'paid' result.
+      if (mapped === "paid" && statusResponse.Amount != null) {
+        const paidAmount = Number(statusResponse.Amount);
+        if (Number.isFinite(paidAmount) && paidAmount + 0.01 < order.total) {
+          return NextResponse.json({ payment_status: order.payment_status, amount_mismatch: true });
+        }
+      }
+      paymentStatus = mapped;
+    }
   } else {
     return NextResponse.json({ payment_status: order.payment_status });
   }

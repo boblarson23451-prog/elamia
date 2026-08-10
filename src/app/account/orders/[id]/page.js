@@ -32,9 +32,34 @@ function OrderDetailContent() {
 
   // Auto-check payment status once when landing back from an online gateway.
   useEffect(() => {
-    if (success && data?.order && data.order.payment_method !== "cod" && data.order.payment_status === "unpaid") {
-      checkStatus();
+    if (!success || !data?.order) return;
+    const order = data.order;
+    if (order.payment_method === "cod" || order.payment_status === "paid") return;
+
+    // SofizPay returns us here; it may include its own order/transaction
+    // reference in the query string under one of several possible names.
+    // Capture it so we have something authoritative to verify against.
+    const returnedOrderNumber =
+      searchParams.get("order_number") ||
+      searchParams.get("orderNumber") ||
+      searchParams.get("order_id") ||
+      searchParams.get("transaction_id");
+
+    if (order.payment_method === "sofizpay" && returnedOrderNumber && !order.sofizpay_transaction_id) {
+      setChecking(true);
+      fetch(`/api/orders/${id}/claim-sofizpay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderNumber: returnedOrderNumber }),
+      })
+        .finally(() => {
+          setChecking(false);
+          load();
+        });
+      return;
     }
+
+    if (order.payment_status === "unpaid") checkStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [success, data?.order?.id]);
 
