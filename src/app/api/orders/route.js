@@ -5,6 +5,7 @@ import { createCheckout, isChargilyConfigured } from "@/lib/chargily";
 import { isSofizPayConfigured, buildCibPaymentUrl } from "@/lib/sofizpay";
 import { computeShipping, totalWeightGrams, CARRIERS } from "@/lib/shipping";
 import { getPickupPointById } from "@/lib/pickup-points";
+import { evaluateCustoms } from "@/lib/customs";
 import { isCodEnabled } from "@/lib/payment-config";
 
 export async function GET() {
@@ -68,6 +69,26 @@ export async function POST(req) {
        WHERE ci.user_id = ?`
     )
     .all(user.id);
+
+  // Customs rules: block orders we expect customs to seize, rather than
+  // taking the money and disclaiming the loss afterwards.
+  const customsItems = db
+    .prepare(
+      `SELECT ci.quantity, p.price, p.category_id,
+              c.name_fr as category_name_fr, c.name_ar as category_name_ar
+       FROM cart_items ci
+       JOIN products p ON p.id = ci.product_id
+       JOIN categories c ON c.id = p.category_id
+       WHERE ci.user_id = ?`
+    )
+    .all(user.id);
+  const customs = evaluateCustoms(customsItems);
+  if (customs.blocked) {
+    return NextResponse.json(
+      { error: "customs_blocked", blockReasons: customs.blockReasons },
+      { status: 400 }
+    );
+  }
 
   if (cartItems.length === 0) {
     return NextResponse.json({ error: "empty_cart" }, { status: 400 });

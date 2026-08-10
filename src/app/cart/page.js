@@ -5,6 +5,7 @@ import { useLang } from "@/context/LangContext";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/i18n";
 import ProductImage from "@/components/ProductImage";
+import CustomsNotice from "@/components/CustomsNotice";
 
 export default function CartPage() {
   const { t, field, lang } = useLang();
@@ -38,6 +39,8 @@ export default function CartPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-xl font-bold mb-6" style={{ color: "var(--color-ink)" }}>{t("cart")}</h1>
+
+      <CustomsNotice />
 
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2 flex flex-col gap-3">

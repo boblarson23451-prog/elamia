@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLang } from "@/context/LangContext";
 import { useCart } from "@/context/CartContext";
 import { WILAYAS, formatPrice } from "@/lib/i18n";
+import CustomsNotice from "@/components/CustomsNotice";
 
 export default function CheckoutPage() {
   const { t, lang } = useLang();
@@ -19,6 +20,7 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [gateways, setGateways] = useState({ chargily: false, sofizpay: false, cod: true });
   const [shipping, setShipping] = useState(null);
+  const [customs, setCustoms] = useState(null);
   const [quoting, setQuoting] = useState(false);
 
   useEffect(() => { if (!loading && !user) router.push("/login"); }, [loading, user, router]);
@@ -92,7 +94,8 @@ export default function CheckoutPage() {
       router.push(`/account/orders/${data.orderId}?success=1`);
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.error === "cod_disabled" ? t("codDisabled") : t("fillAllFields"));
+      if (data.error === "customs_blocked") setError(t("customsBlockedTitle"));
+      else setError(data.error === "cod_disabled" ? t("codDisabled") : t("fillAllFields"));
     }
   };
 
@@ -106,6 +109,8 @@ export default function CheckoutPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-xl font-bold mb-6" style={{ color: "var(--color-ink)" }}>{t("checkoutTitle")}</h1>
+
+      <CustomsNotice onStatus={setCustoms} />
       <div className="grid md:grid-cols-3 gap-8">
         <form onSubmit={submit} className="md:col-span-2 flex flex-col gap-4">
           <div>
@@ -214,7 +219,7 @@ export default function CheckoutPage() {
 
           {error && <p className="text-sm" style={{ color: "var(--color-accent)" }}>{error}</p>}
 
-          <button type="submit" disabled={submitting || !anyPayment} className="rounded-lg py-3 font-semibold text-sm text-white disabled:opacity-60" style={{ background: "var(--color-accent)" }}>
+          <button type="submit" disabled={submitting || !anyPayment || customs?.blocked} className="rounded-lg py-3 font-semibold text-sm text-white disabled:opacity-60" style={{ background: "var(--color-accent)" }}>
             {submitting ? "..." : t("placeOrder")}
           </button>
         </form>

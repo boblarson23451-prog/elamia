@@ -134,6 +134,26 @@ Conformément à la loi 18-05, ne peuvent faire l'objet de transactions en ligne
         body_ar: `يتم التوصيل عبر 58 ولاية، إلى المنزل أو إلى نقطة استلام حسب الاختيار. تُحدَّد الآجال الإرشادية لكل طريقة توصيل قبل تأكيد الطلبية. تُحتسب الآجال ابتداءً من تأكيد الطلبية وتُفهم بأيام العمل. في حال تأخّر معتبر، يُعلَم المستهلك ويمكنه طلب إلغاء طلبيته.`,
       },
       {
+        h_fr: "6 bis. Douane, droits et limitations",
+        h_ar: "6 مكرر. الجمارك والرسوم والقيود",
+        body_fr: `Les commandes sont expédiées depuis l'étranger et sont soumises au contrôle douanier algérien. L'e-consommateur est informé, avant la validation de sa commande, que :
+
+• Toute commande d'une valeur supérieure à 300 USD donne lieu à des droits de douane de 30%, dus par l'e-consommateur lors du dédouanement. Ces droits ne sont ni encaissés ni reversés par {tradeName}.
+• Toute commande d'une valeur supérieure à 500 USD impose à l'e-consommateur de fournir aux services des douanes les informations professionnelles et fiscales requises avant libération de l'envoi.
+• Trois articles ou plus relevant d'un même genre sont susceptibles d'être saisis par les douanes. Afin d'éviter cette situation, {tradeName} bloque la validation de telles commandes ; il appartient à l'e-consommateur de répartir ses achats en conséquence.
+• Les délais d'acheminement et de dédouanement ne dépendent pas de {tradeName}. Sa responsabilité ne saurait être engagée à raison des retards imputables au transporteur ou aux services douaniers, ni des décisions prises par ces derniers.
+
+Les seuils exprimés en USD sont convertis en dinars au taux applicable ; le seuil retenu au moment de la commande vous est indiqué à l'écran.`,
+        body_ar: `تُشحن الطلبيات من الخارج وتخضع للمراقبة الجمركية الجزائرية. يُعلَم المستهلك الإلكتروني، قبل تأكيد طلبيته، بما يلي:
+
+• كل طلبية تفوق قيمتها 300 دولار أمريكي تخضع لرسوم جمركية بنسبة 30%، يتحمّلها المستهلك عند التخليص الجمركي. لا تُحصَّل هذه الرسوم ولا تُدفع من طرف {tradeName}.
+• كل طلبية تفوق قيمتها 500 دولار أمريكي تفرض على المستهلك تقديم المعلومات التجارية والجبائية المطلوبة لمصالح الجمارك قبل الإفراج عن الشحنة.
+• ثلاث قطع أو أكثر من نفس الصنف تكون عرضة للحجز من طرف الجمارك. لتفادي ذلك، يمنع {tradeName} تأكيد مثل هذه الطلبيات؛ وعلى المستهلك توزيع مشترياته وفقاً لذلك.
+• آجال النقل والتخليص الجمركي خارجة عن إرادة {tradeName}. لا تُثار مسؤوليته بسبب التأخيرات العائدة للناقل أو لمصالح الجمارك، ولا بسبب القرارات الصادرة عن هذه الأخيرة.
+
+تُحوَّل العتبات المعبَّر عنها بالدولار إلى الدينار بالسعر المطبَّق؛ وتُعرض عليكم العتبة المعتمدة وقت الطلب على الشاشة.`,
+      },
+      {
         h_fr: "7. Rétractation, retour et remboursement",
         h_ar: "7. التراجع والإرجاع والاسترجاع",
         body_fr: `Les modalités détaillées figurent dans notre Politique de retour, qui fait partie intégrante des présentes conditions.`,
@@ -170,16 +190,16 @@ Conformément à la loi 18-05, ne peuvent faire l'objet de transactions en ligne
         h_ar: "حق الإرجاع",
         body_fr: `Conformément aux articles 22 et 23 de la loi n° 18-05, l'e-consommateur peut retourner un produit non conforme à la commande, défectueux ou endommagé.
 
-⚠️ À COMPLÉTER : indiquez ici le délai exact de retour que vous appliquez (à compter de la réception), et faites-le valider par votre conseil juridique afin qu'il soit conforme aux délais légaux en vigueur.`,
+Le délai pour initier un retour est de 15 jours à compter de la réception de la commande. Passé ce délai, aucune demande de retour ne pourra être acceptée.`,
         body_ar: `طبقاً للمادتين 22 و23 من القانون 18-05، يمكن للمستهلك الإلكتروني إرجاع منتج غير مطابق للطلبية أو معيب أو متضرّر.
 
-⚠️ يُستكمل: حدّدوا هنا أجل الإرجاع الدقيق المطبَّق (ابتداءً من الاستلام)، وتأكّدوا من مطابقته للآجال القانونية السارية عبر مستشاركم القانوني.`,
+أجل الشروع في الإرجاع هو 15 يوماً ابتداءً من استلام الطلبية. بعد انقضاء هذا الأجل، لا يمكن قبول أي طلب إرجاع.`,
       },
       {
         h_fr: "Conditions",
         h_ar: "الشروط",
-        body_fr: `Le produit doit être retourné dans son état d'origine, complet, non utilisé, avec son emballage et ses accessoires. Les produits personnalisés, l'hygiène et les sous-vêtements peuvent être exclus du retour lorsque la réglementation le permet.`,
-        body_ar: `يجب إرجاع المنتج في حالته الأصلية، كاملاً، غير مستعمل، مع تغليفه وملحقاته. يمكن استثناء المنتجات المخصّصة ومنتجات النظافة والملابس الداخلية من الإرجاع عندما يسمح التنظيم بذلك.`,
+        body_fr: `Le produit doit être retourné scellé, dans l'état exact dans lequel il a été reçu, complet, non utilisé, avec son emballage d'origine et ses accessoires. Les produits personnalisés, l'hygiène et les sous-vêtements peuvent être exclus du retour lorsque la réglementation le permet.`,
+        body_ar: `يجب إرجاع المنتج مختوماً، في نفس الحالة التي استُلم بها، كاملاً، غير مستعمل، مع تغليفه الأصلي وملحقاته. يمكن استثناء المنتجات المخصّصة ومنتجات النظافة والملابس الداخلية من الإرجاع عندما يسمح التنظيم بذلك.`,
       },
       {
         h_fr: "Procédure",
