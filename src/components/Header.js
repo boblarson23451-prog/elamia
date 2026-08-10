@@ -34,7 +34,20 @@ export default function Header() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap md:flex-nowrap">
-        <Link href="/" className="shrink-0 flex items-baseline gap-1">
+        <Link href="/" className="shrink-0 flex items-center gap-2" aria-label={t("brand")}>
+          {/* Hexagon brand mark — matches the app icon */}
+          <svg width="30" height="30" viewBox="0 0 100 100" aria-hidden="true" className="shrink-0">
+            <polygon
+              points="93,50 71.5,87.2 28.5,87.2 7,50 28.5,12.8 71.5,12.8"
+              fill="var(--color-cream)"
+            />
+            <polygon
+              points="85,50 67.5,80.3 32.5,80.3 15,50 32.5,19.7 67.5,19.7"
+              fill="none"
+              stroke="var(--color-gold)"
+              strokeWidth="2.5"
+            />
+          </svg>
           <span
             className="text-2xl font-extrabold leading-none"
             dir="rtl"
