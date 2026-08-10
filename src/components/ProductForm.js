@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLang } from "@/context/LangContext";
+import ImageUploader from "./ImageUploader";
 
 export default function ProductForm({ initial, productId, apiBase = "/api/admin/products", redirectPath = "/admin/products" }) {
   const { t } = useLang();
@@ -145,21 +146,7 @@ export default function ProductForm({ initial, productId, apiBase = "/api/admin/
         </div>
       </div>
 
-      <div>
-        <label className="text-sm font-medium block mb-1">URLs des images</label>
-        <textarea
-          value={form.image_urls || ""}
-          onChange={(e) => update("image_urls", e.target.value)}
-          rows={3}
-          placeholder={"https://.../photo1.jpg\nhttps://.../photo2.jpg"}
-          className={field}
-          style={fieldStyle}
-        />
-        <p className="text-xs mt-1" style={{ color: "var(--color-ink-soft)" }}>
-          Une URL par ligne. La première sert d'image principale. Si vide ou inaccessible, une image de
-          remplacement est affichée.
-        </p>
-      </div>
+      <ImageUploader value={form.image_urls} onChange={(v) => update("image_urls", v)} />
 
       {error && <p className="text-sm" style={{ color: "var(--color-accent)" }}>{error}</p>}
 
