@@ -1,18 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireVendor } from "@/lib/auth";
+import { uniqueSlug } from "@/lib/slug";
 
-function slugify(text) {
-  return (
-    text
-      .toString()
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "") || `produit-${Date.now()}`
-  );
-}
 
 export async function GET() {
   let vendor;
@@ -49,9 +39,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
 
-  let slug = slugify(name_fr);
-  const existsSlug = db.prepare("SELECT id FROM products WHERE slug = ?").get(slug);
-  if (existsSlug) slug = `${slug}-${Date.now().toString().slice(-5)}`;
+  const slug = uniqueSlug(db, name_fr || name_ar);
 
   const info = db
     .prepare(

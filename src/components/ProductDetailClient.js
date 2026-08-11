@@ -17,6 +17,17 @@ export default function ProductDetailClient({ product, variants = [] }) {
   const gallery = parseImageUrls(product.image_urls);
   const [activeImg, setActiveImg] = useState(0);
   const [status, setStatus] = useState("idle");
+  const [variant, setVariant] = useState(null);
+  const [variantError, setVariantError] = useState("");
+
+  const hasVariants = variants.length > 0;
+  // A variant's price/stock override the product's when one is selected.
+  // With variants but none chosen yet, show the combined stock so the page
+  // doesn't read "out of stock" before the shopper picks a size.
+  const effPrice = variant?.price ?? product.price;
+  const effStock = hasVariants
+    ? (variant ? variant.stock : variants.reduce((s, v) => s + v.stock, 0))
+    : product.stock;
 
   const name = field(product, "name");
   const description = field(product, "description");

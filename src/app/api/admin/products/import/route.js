@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { uniqueSlug } from "@/lib/slug";
 
-function slugify(text) {
-  return (
-    String(text).toLowerCase().trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "") || `produit-${Date.now()}`
-  );
-}
 
 /** Minimal RFC4180-ish CSV parser: handles quoted fields, embedded commas and newlines. */
 function parseCsv(text) {
@@ -127,10 +120,7 @@ export async function POST(req) {
 
   const run = db.transaction(() => {
     for (const p of parsed) {
-      let slug = slugify(p.name_fr);
-      if (db.prepare("SELECT id FROM products WHERE slug = ?").get(slug)) {
-        slug = `${slug}-${Math.random().toString(36).slice(2, 7)}`;
-      }
+      const slug = uniqueSlug(db, p.name_fr || p.name_ar);
       try {
         insert.run(
           slug, p.name_ar, p.name_fr, p.description_ar, p.description_fr,
