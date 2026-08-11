@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useLang } from "@/context/LangContext";
+import { compressImage, formatBytes } from "@/lib/image-compress";
 
 /**
  * Uploads images from the user's computer and manages the ordered list of
@@ -14,6 +15,8 @@ export default function ImageUploader({ value, onChange }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [note, setNote] = useState("");
 
   const urls = String(value || "")
     .split(/[\n,]+/)
@@ -26,29 +29,56 @@ export default function ImageUploader({ value, onChange }) {
     const files = Array.from(fileList || []);
     if (files.length === 0) return;
     setError("");
+    setNote("");
     setBusy(true);
+    setProgress(0);
+
     try {
+      // 1) Shrink in the browser first — this is what makes uploads fast.
+      setNote(t("optimising"));
+      const originalBytes = files.reduce((n, f) => n + f.size, 0);
+      const prepared = [];
+      for (const f of files.slice(0, 10)) prepared.push(await compressImage(f));
+      const finalBytes = prepared.reduce((n, f) => n + f.size, 0);
+      if (finalBytes < originalBytes) {
+        setNote(`${formatBytes(originalBytes)} → ${formatBytes(finalBytes)}`);
+      }
+
+      // 2) Upload with real progress. fetch() can't report upload progress,
+      //    so use XHR — a silent minute-long wait is what made this feel broken.
       const fd = new FormData();
-      files.slice(0, 10).forEach((f) => fd.append("files", f));
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(t("uploadFailed"));
-      } else {
-        if (data.urls?.length) setUrls([...urls, ...data.urls]);
-        if (data.errors?.length) {
-          const first = data.errors[0];
-          setError(
-            first.error === "file_too_large" ? t("uploadTooLarge")
-            : first.error === "unsupported_type" ? t("uploadBadType")
-            : t("uploadFailed")
-          );
-        }
+      prepared.forEach((f) => fd.append("files", f));
+
+      const data = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/upload");
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+        };
+        xhr.onload = () => {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch { reject(new Error("bad_response")); }
+        };
+        xhr.onerror = () => reject(new Error("network"));
+        xhr.ontimeout = () => reject(new Error("timeout"));
+        xhr.timeout = 120000;
+        xhr.send(fd);
+      });
+
+      if (data.urls?.length) setUrls([...urls, ...data.urls]);
+      if (data.errors?.length) {
+        const first = data.errors[0];
+        setError(
+          first.error === "file_too_large" ? t("uploadTooLarge")
+          : first.error === "unsupported_type" ? t("uploadBadType")
+          : t("uploadFailed")
+        );
       }
     } catch {
       setError(t("uploadFailed"));
     } finally {
       setBusy(false);
+      setProgress(0);
       if (inputRef.current) inputRef.current.value = "";
     }
   };
@@ -77,10 +107,18 @@ export default function ImageUploader({ value, onChange }) {
         }}
       >
         <p className="text-sm font-medium" style={{ color: "var(--color-ink)" }}>
-          {busy ? t("uploading") : t("uploadCta")}
+          {busy ? (progress > 0 ? `${t("uploading")} ${progress}%` : t("optimising")) : t("uploadCta")}
         </p>
+        {busy && (
+          <div className="h-1.5 rounded-full overflow-hidden mt-2 mx-auto max-w-xs" style={{ background: "var(--color-line)" }}>
+            <div
+              className="h-full transition-all duration-200"
+              style={{ width: `${progress}%`, background: "var(--color-accent)" }}
+            />
+          </div>
+        )}
         <p className="text-xs mt-1" style={{ color: "var(--color-ink-soft)" }}>
-          {t("uploadHint")}
+          {busy && note ? note : t("uploadHint")}
         </p>
         <input
           ref={inputRef}
