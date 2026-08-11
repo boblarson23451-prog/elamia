@@ -35,13 +35,17 @@ export function CartProvider({ children }) {
     refreshUser().then(() => refreshCart());
   }, [refreshUser, refreshCart]);
 
-  const addToCart = async (productId, quantity = 1) => {
+  const addToCart = async (productId, quantity = 1, variantId = null) => {
     const res = await fetch("/api/cart", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId, quantity }),
+      body: JSON.stringify({ productId, quantity, variantId }),
     });
     if (res.status === 401) return { ok: false, needsAuth: true };
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, error: data.error };
+    }
     await refreshCart();
     return { ok: true };
   };

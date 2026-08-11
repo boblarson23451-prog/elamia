@@ -57,6 +57,13 @@ export default function CartPage() {
                 <Link href={`/products/${item.slug}`} className="text-sm font-medium line-clamp-2" style={{ color: "var(--color-ink)" }}>
                   {field(item, "name")}
                 </Link>
+                {(item.v1_fr || item.v1_ar || item.v2_fr || item.v2_ar) && (
+                  <div className="text-xs mt-0.5" style={{ color: "var(--color-ink-soft)" }}>
+                    {[lang === "ar" ? (item.v1_ar || item.v1_fr) : (item.v1_fr || item.v1_ar),
+                      lang === "ar" ? (item.v2_ar || item.v2_fr) : (item.v2_fr || item.v2_ar)]
+                      .filter(Boolean).join(" / ")}
+                  </div>
+                )}
                 <div className="mt-1 font-mono text-sm" style={{ color: "var(--color-accent-dark, #B93A22)" }}>
                   {formatPrice(item.price, lang)}
                 </div>

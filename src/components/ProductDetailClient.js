@@ -7,8 +7,9 @@ import { useLang } from "@/context/LangContext";
 import { useCart } from "@/context/CartContext";
 import ProductImage, { parseImageUrls } from "./ProductImage";
 import { PriceTicket, DiscountStamp } from "./PriceTicket";
+import VariantSelector from "./VariantSelector";
 
-export default function ProductDetailClient({ product }) {
+export default function ProductDetailClient({ product, variants = [] }) {
   const { t, field } = useLang();
   const { addToCart } = useCart();
   const router = useRouter();
@@ -19,11 +20,16 @@ export default function ProductDetailClient({ product }) {
 
   const name = field(product, "name");
   const description = field(product, "description");
-  const inStock = product.stock > 0;
+  const inStock = effStock > 0;
 
   const handleAdd = async (buyNow = false) => {
+    setVariantError("");
+    if (hasVariants && !variant) {
+      setVariantError(t("selectVariantFirst"));
+      return;
+    }
     setStatus("loading");
-    const res = await addToCart(product.id, qty);
+    const res = await addToCart(product.id, qty, variant?.id ?? null);
     if (res.needsAuth) {
       router.push("/login");
       return;
@@ -48,7 +54,7 @@ export default function ProductDetailClient({ product }) {
           <div className="relative rounded-xl overflow-hidden aspect-square" style={{ background: "var(--color-paper)" }}>
             <ProductImage
               seed={product.image_seed}
-              urls={gallery.length ? gallery[activeImg] : null}
+              urls={variant?.image_url || (gallery.length ? gallery[activeImg] : null)}
               alt={name}
               className="w-full h-full object-cover"
             />
@@ -87,7 +93,17 @@ export default function ProductDetailClient({ product }) {
             🏪 {t("soldBy")}: <span className="font-semibold">{product.vendor_store_name || t("officialStore")}</span>
           </div>
 
-          <PriceTicket price={product.price} comparePrice={product.compare_at_price} size="lg" />
+          <PriceTicket price={effPrice} comparePrice={product.compare_at_price} size="lg" />
+
+          <VariantSelector
+            product={product}
+            variants={variants}
+            selected={variant}
+            onSelect={(v) => { setVariant(v); setQty(1); }}
+          />
+          {variantError && (
+            <p className="text-sm mt-2" style={{ color: "var(--color-accent)" }}>{variantError}</p>
+          )}
 
           <p className="mt-5 text-sm leading-relaxed" style={{ color: "var(--color-ink)" }}>
             {description}
@@ -95,7 +111,7 @@ export default function ProductDetailClient({ product }) {
 
           <div className="mt-3 text-sm">
             {inStock ? (
-              <span style={{ color: "var(--color-brand)" }}>✓ {t("stock")}: {product.stock}</span>
+              <span style={{ color: "var(--color-brand)" }}>✓ {t("stock")}: {effStock}</span>
             ) : (
               <span style={{ color: "var(--color-accent)" }}>{t("outOfStock")}</span>
             )}
@@ -113,7 +129,7 @@ export default function ProductDetailClient({ product }) {
                 </button>
                 <span className="px-4 font-mono">{qty}</span>
                 <button
-                  onClick={() => setQty((q) => Math.min(product.stock, q + 1))}
+                  onClick={() => setQty((q) => Math.min(effStock, q + 1))}
                   className="px-3 py-2 text-lg"
                   style={{ color: "var(--color-ink)" }}
                 >

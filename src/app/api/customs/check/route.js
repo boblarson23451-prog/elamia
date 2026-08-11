@@ -9,11 +9,12 @@ export async function GET() {
 
   const items = db
     .prepare(
-      `SELECT ci.quantity, p.price, p.category_id,
+      `SELECT ci.quantity, COALESCE(v.price,p.price) as price, p.category_id,
               c.name_fr as category_name_fr, c.name_ar as category_name_ar
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
        JOIN categories c ON c.id = p.category_id
+       LEFT JOIN product_variants v ON v.id = ci.variant_id
        WHERE ci.user_id = ?`
     )
     .all(user.id);

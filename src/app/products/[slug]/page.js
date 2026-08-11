@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Section from "@/components/Section";
 import ProductGrid from "@/components/ProductGrid";
 import ProductDetailClient from "@/components/ProductDetailClient";
+import { getVariants } from "@/lib/variants";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,11 @@ export default async function ProductPage({ params }) {
     .prepare(`SELECT * FROM products WHERE category_id = ? AND id != ? AND is_active = 1 LIMIT 5`)
     .all(product.category_id, product.id);
 
+  const variants = getVariants(product.id);
+
   return (
     <div>
-      <ProductDetailClient product={product} />
+      <ProductDetailClient product={product} variants={variants} />
       {related.length > 0 && (
         <Section titleKey="relatedProducts">
           <ProductGrid products={related} />

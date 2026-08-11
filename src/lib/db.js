@@ -68,6 +68,10 @@ CREATE TABLE IF NOT EXISTS products (
   image_seed TEXT NOT NULL,
   image_urls TEXT,
   supplier_ref TEXT,
+  option1_name_fr TEXT,
+  option1_name_ar TEXT,
+  option2_name_fr TEXT,
+  option2_name_ar TEXT,
   weight_grams INTEGER NOT NULL DEFAULT 500,
   stock INTEGER NOT NULL DEFAULT 50,
   rating REAL NOT NULL DEFAULT 4.5,
@@ -76,13 +80,32 @@ CREATE TABLE IF NOT EXISTS products (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS product_variants (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  v1_fr TEXT,
+  v1_ar TEXT,
+  v2_fr TEXT,
+  v2_ar TEXT,
+  sku TEXT,
+  price INTEGER,
+  stock INTEGER NOT NULL DEFAULT 0,
+  weight_grams INTEGER,
+  image_url TEXT,
+  swatch TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  position INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_variants_product ON product_variants(product_id);
+
 CREATE TABLE IF NOT EXISTS cart_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   product_id INTEGER NOT NULL REFERENCES products(id),
   quantity INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(user_id, product_id)
+  variant_id INTEGER,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -137,6 +160,52 @@ ensureColumn("orders", "delivery_type", "delivery_type TEXT NOT NULL DEFAULT 'ho
 ensureColumn("orders", "pickup_point_id", "pickup_point_id TEXT");
 ensureColumn("orders", "subtotal", "subtotal INTEGER NOT NULL DEFAULT 0");
 ensureColumn("products", "image_urls", "image_urls TEXT");
+ensureColumn("products", "option1_name_fr", "option1_name_fr TEXT");
+ensureColumn("products", "option1_name_ar", "option1_name_ar TEXT");
+ensureColumn("products", "option2_name_fr", "option2_name_fr TEXT");
+ensureColumn("products", "option2_name_ar", "option2_name_ar TEXT");
+ensureColumn("cart_items", "variant_id", "variant_id INTEGER REFERENCES product_variants(id)");
+ensureColumn("order_items", "variant_id", "variant_id INTEGER");
+ensureColumn("order_items", "variant_label_fr", "variant_label_fr TEXT");
+ensureColumn("order_items", "variant_label_ar", "variant_label_ar TEXT");
+
+/* cart_items originally carried UNIQUE(user_id, product_id), which makes it
+ * impossible to hold the same product in two variants (e.g. a shirt in M and
+ * in L). SQLite can't drop a constraint in place, so rebuild the table once.
+ * Note NULLs are distinct in SQLite UNIQUE constraints, so the replacement is
+ * an expression index over COALESCE(variant_id, 0) — otherwise rows with no
+ * variant could duplicate freely. */
+function rebuildCartItemsIfNeeded() {
+  const ddl = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='cart_items'").get()?.sql || "";
+  if (!/UNIQUE\s*\(\s*user_id\s*,\s*product_id\s*\)/i.test(ddl)) return;
+
+  db.transaction(() => {
+    db.exec(`
+      CREATE TABLE cart_items_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        product_id INTEGER NOT NULL REFERENCES products(id),
+        variant_id INTEGER REFERENCES product_variants(id),
+        quantity INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO cart_items_new (id, user_id, product_id, variant_id, quantity, created_at)
+        SELECT id, user_id, product_id, variant_id, quantity, created_at FROM cart_items;
+      DROP TABLE cart_items;
+      ALTER TABLE cart_items_new RENAME TO cart_items;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_cart_unique
+        ON cart_items(user_id, product_id, COALESCE(variant_id, 0));
+    `);
+  })();
+}
+try {
+  rebuildCartItemsIfNeeded();
+} catch (err) {
+  console.warn("[ELALAMIA] cart_items rebuild skipped:", err.message);
+}
+
+// Fresh databases get the index directly (the rebuild above is a no-op there).
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_cart_unique ON cart_items(user_id, product_id, COALESCE(variant_id, 0));");
 ensureColumn("products", "supplier_ref", "supplier_ref TEXT");
 
 /** True while `next build` is collecting page data. Build workers import this

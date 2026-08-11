@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useLang } from "@/context/LangContext";
 import ProductForm from "@/components/ProductForm";
+import VariantEditor from "@/components/VariantEditor";
 
 export default function VendorEditProductPage() {
   const { t } = useLang();
@@ -25,6 +26,9 @@ export default function VendorEditProductPage() {
     <div>
       <h1 className="text-xl font-bold mb-6" style={{ color: "var(--color-ink)" }}>{t("edit")}</h1>
       <ProductForm productId={id} initial={product} apiBase="/api/vendor/products" redirectPath="/vendor/products" />
+      <div className="mt-8">
+        <VariantEditor productId={id} apiBase="/api/vendor/products" />
+      </div>
     </div>
   );
 }

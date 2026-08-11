@@ -168,7 +168,7 @@ function OrderDetailContent() {
         <div className="flex flex-col gap-2 border-t pt-3" style={{ borderColor: "var(--color-line)" }}>
           {items.map((it) => (
             <div key={it.id} className="flex justify-between text-sm">
-              <span>{it.quantity}× {lang === "ar" ? it.name_ar : it.name_fr}</span>
+              <span>{it.quantity}× {lang === "ar" ? it.name_ar : it.name_fr}{(lang === "ar" ? it.variant_label_ar : it.variant_label_fr) ? ` — ${lang === "ar" ? it.variant_label_ar : it.variant_label_fr}` : ""}</span>
               <span className="font-mono">{formatPrice(it.price * it.quantity, lang)}</span>
             </div>
           ))}

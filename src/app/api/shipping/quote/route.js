@@ -12,8 +12,8 @@ export async function POST(req) {
 
   const items = db
     .prepare(
-      `SELECT ci.quantity, p.price, p.weight_grams
-       FROM cart_items ci JOIN products p ON p.id = ci.product_id
+      `SELECT ci.quantity, COALESCE(v.price,p.price) as price, COALESCE(v.weight_grams,p.weight_grams) as weight_grams
+       FROM cart_items ci JOIN products p ON p.id = ci.product_id LEFT JOIN product_variants v ON v.id = ci.variant_id
        WHERE ci.user_id = ?`
     )
     .all(user.id);

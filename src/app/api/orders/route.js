@@ -6,6 +6,7 @@ import { isSofizPayConfigured, buildCibPaymentUrl } from "@/lib/sofizpay";
 import { computeShipping, totalWeightGrams, CARRIERS } from "@/lib/shipping";
 import { getPickupPointById } from "@/lib/pickup-points";
 import { evaluateCustoms } from "@/lib/customs";
+import { variantLabel } from "@/lib/variants";
 import { isCodEnabled } from "@/lib/payment-config";
 
 export async function GET() {
@@ -64,8 +65,15 @@ export async function POST(req) {
 
   const cartItems = db
     .prepare(
-      `SELECT ci.quantity, p.id as product_id, p.name_ar, p.name_fr, p.price, p.stock, p.vendor_id, p.weight_grams
-       FROM cart_items ci JOIN products p ON p.id = ci.product_id
+      `SELECT ci.quantity, ci.variant_id,
+              p.id as product_id, p.name_ar, p.name_fr, p.vendor_id,
+              COALESCE(v.price, p.price) as price,
+              COALESCE(v.stock, p.stock) as stock,
+              COALESCE(v.weight_grams, p.weight_grams) as weight_grams,
+              v.v1_fr, v.v1_ar, v.v2_fr, v.v2_ar
+       FROM cart_items ci
+       JOIN products p ON p.id = ci.product_id
+       LEFT JOIN product_variants v ON v.id = ci.variant_id
        WHERE ci.user_id = ?`
     )
     .all(user.id);
@@ -74,11 +82,12 @@ export async function POST(req) {
   // taking the money and disclaiming the loss afterwards.
   const customsItems = db
     .prepare(
-      `SELECT ci.quantity, p.price, p.category_id,
+      `SELECT ci.quantity, COALESCE(v.price, p.price) as price, p.category_id,
               c.name_fr as category_name_fr, c.name_ar as category_name_ar
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
        JOIN categories c ON c.id = p.category_id
+       LEFT JOIN product_variants v ON v.id = ci.variant_id
        WHERE ci.user_id = ?`
     )
     .all(user.id);
@@ -129,16 +138,28 @@ export async function POST(req) {
     const orderId = info.lastInsertRowid;
 
     const insertItem = db.prepare(
-      `INSERT INTO order_items (order_id, product_id, vendor_id, name_ar, name_fr, price, quantity)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO order_items
+         (order_id, product_id, vendor_id, variant_id, variant_label_fr, variant_label_ar, name_ar, name_fr, price, quantity)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     for (const item of cartItems) {
-      insertItem.run(orderId, item.product_id, item.vendor_id || null, item.name_ar, item.name_fr, item.price, item.quantity);
-      db.prepare("UPDATE products SET stock = MAX(0, stock - ?), sold_count = sold_count + ? WHERE id = ?").run(
-        item.quantity,
-        item.quantity,
-        item.product_id
+      // Snapshot the variant label onto the order line: if the variant is
+      // later renamed or deleted, the historical order still says what was
+      // actually sold.
+      insertItem.run(
+        orderId, item.product_id, item.vendor_id || null, item.variant_id || null,
+        variantLabel(item, "fr"), variantLabel(item, "ar"),
+        item.name_ar, item.name_fr, item.price, item.quantity
       );
+
+      if (item.variant_id) {
+        db.prepare("UPDATE product_variants SET stock = MAX(0, stock - ?) WHERE id = ?").run(item.quantity, item.variant_id);
+        db.prepare("UPDATE products SET sold_count = sold_count + ? WHERE id = ?").run(item.quantity, item.product_id);
+      } else {
+        db.prepare("UPDATE products SET stock = MAX(0, stock - ?), sold_count = sold_count + ? WHERE id = ?").run(
+          item.quantity, item.quantity, item.product_id
+        );
+      }
     }
 
     db.prepare("DELETE FROM cart_items WHERE user_id = ?").run(user.id);
