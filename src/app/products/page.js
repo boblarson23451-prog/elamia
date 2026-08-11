@@ -1,5 +1,7 @@
 "use client";
 
+// Catalogue reflects live stock/prices — never prerender it.
+
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLang } from "@/context/LangContext";

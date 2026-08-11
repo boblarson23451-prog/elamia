@@ -10,10 +10,9 @@
  *   - navigations   → network-first, falling back to the offline page
  */
 
-const VERSION = "v3";
+const VERSION = "v4";
 const STATIC_CACHE = `elalamia-static-${VERSION}`;
 const IMAGE_CACHE = `elalamia-img-${VERSION}`;
-const PAGE_CACHE = `elalamia-pages-${VERSION}`;
 const OFFLINE_URL = "/offline";
 const MAX_IMAGES = 60;
 
@@ -111,19 +110,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Page navigations: network-first so prices/stock are fresh, offline fallback.
+  // Page navigations: ALWAYS from the network, never served from cache.
+  //
+  // An earlier version cached pages here ("network-first"). In practice that
+  // still let stale HTML reach shoppers — edited prices, renamed products and
+  // newly added items appeared to not update. For a storefront, showing a
+  // stale price is worse than showing nothing, so pages are now network-only
+  // with the offline screen as the sole fallback.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(PAGE_CACHE).then((c) => c.put(request, copy));
-          return res;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          return cached || caches.match(OFFLINE_URL);
-        })
+      fetch(request).catch(() => caches.match(OFFLINE_URL))
     );
   }
 });

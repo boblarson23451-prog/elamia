@@ -17,6 +17,18 @@ export default function AdminProductsPage() {
 
   useEffect(load, []);
 
+  // Refetch when the tab regains focus, so returning from an edit screen or
+  // another tab always shows current data rather than a stale snapshot.
+  useEffect(() => {
+    const onFocus = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", onFocus);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
   const remove = async (id) => {
     if (!confirm(t("delete") + "?")) return;
     await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
