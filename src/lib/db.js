@@ -144,8 +144,15 @@ CREATE TABLE IF NOT EXISTS order_items (
 // Lightweight migration: add columns that may be missing on a DB created by an earlier version of this app.
 function ensureColumn(table, column, ddl) {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all();
-  if (!cols.some((c) => c.name === column)) {
+  if (cols.some((c) => c.name === column)) return;
+  try {
     db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  } catch (err) {
+    // Next.js runs many build workers in parallel, all importing this module
+    // against the same database file. Two can pass the check above before
+    // either runs the ALTER, and the loser gets "duplicate column name".
+    // The end state is identical either way, so treat it as success.
+    if (!/duplicate column name/i.test(err.message)) throw err;
   }
 }
 ensureColumn("products", "vendor_id", "vendor_id INTEGER REFERENCES vendors(id)");
