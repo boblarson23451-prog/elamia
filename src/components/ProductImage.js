@@ -8,7 +8,11 @@ export function parseImageUrls(raw) {
   return String(raw)
     .split(/[\n,]+/)
     .map((u) => u.trim())
-    .filter((u) => /^https?:\/\//i.test(u));
+    // Accept both absolute URLs (supplier/CDN links) and site-relative paths
+    // like /api/uploads/xxx.webp. An earlier version only allowed http(s),
+    // which silently discarded every image uploaded from the admin - the file
+    // saved fine, but the product page always fell back to the placeholder.
+    .filter((u) => /^(https?:\/\/|\/)/i.test(u));
 }
 
 /**
