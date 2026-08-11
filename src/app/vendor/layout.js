@@ -19,15 +19,22 @@ export default function VendorLayout({ children }) {
       .then((d) => setVendor(d.vendor));
   }, []);
 
-  useEffect(() => {
-    if (!loading && !user) router.push("/login");
-  }, [loading, user, router]);
+
 
   if (loading || vendor === undefined) {
     return <div className="max-w-md mx-auto px-4 py-16 text-center">...</div>;
   }
 
-  if (!user) return <div className="max-w-md mx-auto px-4 py-16 text-center">...</div>;
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 text-center">
+        <p className="mb-4" style={{ color: "var(--color-ink)" }}>{t("adminNeedsLogin")}</p>
+        <Link href="/login" className="inline-block rounded-lg px-6 py-3 font-semibold text-sm text-white" style={{ background: "var(--color-accent)" }}>
+          {t("login")}
+        </Link>
+      </div>
+    );
+  }
 
   if (!vendor || vendor.status !== "approved") {
     return (

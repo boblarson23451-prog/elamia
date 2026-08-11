@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLang } from "@/context/LangContext";
 import { useCart } from "@/context/CartContext";
 
@@ -10,7 +10,23 @@ export default function Header() {
   const { t, lang, setLang } = useLang();
   const { count, user, setUser } = useCart();
   const router = useRouter();
+  const menuRef = useRef(null);
+
+  // Close the account menu on outside click or Escape.
+  useEffect(() => {
+    const onDown = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    const onKey = (e) => { if (e.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
   const [q, setQ] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -84,36 +100,70 @@ export default function Header() {
           </button>
 
           {user ? (
-            <div className="relative group">
-              <button className="text-white text-sm flex items-center gap-1">
-                👤 <span className="hidden md:inline">{user.name.split(" ")[0]}</span>
-              </button>
-              <div
-                className="absolute end-0 mt-1 hidden group-hover:flex flex-col rounded-lg shadow-lg overflow-hidden min-w-[160px] z-50"
-                style={{ background: "var(--color-paper)" }}
-              >
-                <Link href="/account" className="px-4 py-2 text-sm hover:bg-black/5" style={{ color: "var(--color-ink)" }}>
-                  {t("myOrders")}
+            <div className="relative flex items-center gap-2" ref={menuRef}>
+              {/* Direct dashboard link — a hover-only menu was unusable on
+                  touch devices and fiddly on desktop, so the most important
+                  destination is now always one visible tap away. */}
+              {user.role === "admin" && (
+                <Link
+                  href="/admin"
+                  className="hidden sm:inline text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-white/40 text-white hover:bg-white/10"
+                >
+                  {t("adminDashboard")}
                 </Link>
-                {user.role === "admin" && (
-                  <Link href="/admin" className="px-4 py-2 text-sm hover:bg-black/5" style={{ color: "var(--color-ink)" }}>
-                    {t("adminDashboard")}
+              )}
+              {user.role === "vendor" && (
+                <Link
+                  href="/vendor"
+                  className="hidden sm:inline text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-white/40 text-white hover:bg-white/10"
+                >
+                  {t("vendorDashboard")}
+                </Link>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
+                className="text-white text-sm flex items-center gap-1"
+              >
+                👤 <span className="hidden md:inline">{user.name.split(" ")[0]}</span>
+                <span className="text-[10px]">▾</span>
+              </button>
+
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="absolute end-0 top-full mt-2 flex flex-col rounded-lg shadow-lg overflow-hidden min-w-[190px] z-50 border"
+                  style={{ background: "var(--color-paper)", borderColor: "var(--color-line)" }}
+                >
+                  <div className="px-4 py-2 text-xs border-b" style={{ color: "var(--color-ink-soft)", borderColor: "var(--color-line)" }}>
+                    {user.email}
+                  </div>
+                  <Link href="/account" onClick={() => setMenuOpen(false)} className="px-4 py-2.5 text-sm hover:bg-black/5" style={{ color: "var(--color-ink)" }}>
+                    {t("myOrders")}
                   </Link>
-                )}
-                {user.role === "vendor" && (
-                  <Link href="/vendor" className="px-4 py-2 text-sm hover:bg-black/5" style={{ color: "var(--color-ink)" }}>
-                    {t("vendorDashboard")}
-                  </Link>
-                )}
-                {user.role === "customer" && (
-                  <Link href="/sell" className="px-4 py-2 text-sm hover:bg-black/5" style={{ color: "var(--color-ink)" }}>
-                    {t("sellOnElalamia")}
-                  </Link>
-                )}
-                <button onClick={onLogout} className="px-4 py-2 text-sm text-start hover:bg-black/5" style={{ color: "var(--color-accent)" }}>
-                  {t("logout")}
-                </button>
-              </div>
+                  {user.role === "admin" && (
+                    <Link href="/admin" onClick={() => setMenuOpen(false)} className="px-4 py-2.5 text-sm hover:bg-black/5 font-semibold" style={{ color: "var(--color-brand)" }}>
+                      {t("adminDashboard")}
+                    </Link>
+                  )}
+                  {user.role === "vendor" && (
+                    <Link href="/vendor" onClick={() => setMenuOpen(false)} className="px-4 py-2.5 text-sm hover:bg-black/5 font-semibold" style={{ color: "var(--color-brand)" }}>
+                      {t("vendorDashboard")}
+                    </Link>
+                  )}
+                  {user.role === "customer" && (
+                    <Link href="/sell" onClick={() => setMenuOpen(false)} className="px-4 py-2.5 text-sm hover:bg-black/5" style={{ color: "var(--color-ink)" }}>
+                      {t("sellOnElalamia")}
+                    </Link>
+                  )}
+                  <button onClick={() => { setMenuOpen(false); onLogout(); }} className="px-4 py-2.5 text-sm text-start hover:bg-black/5 border-t" style={{ color: "var(--color-accent)", borderColor: "var(--color-line)" }}>
+                    {t("logout")}
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <Link href="/login" className="text-white text-sm">

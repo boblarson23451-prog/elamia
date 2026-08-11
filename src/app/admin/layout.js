@@ -1,25 +1,43 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+
 import { useLang } from "@/context/LangContext";
 import { useCart } from "@/context/CartContext";
 
 export default function AdminLayout({ children }) {
   const { t } = useLang();
   const { user, loading } = useCart();
-  const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (!loading && (!user || user.role !== "admin")) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
+  // Previously this silently redirected to /login, which looked like the admin
+  // page "doing nothing". Now it states what's wrong.
+  if (loading) {
+    return <div className="max-w-md mx-auto px-4 py-16 text-center" style={{ color: "var(--color-ink-soft)" }}>…</div>;
+  }
 
-  if (!user || user.role !== "admin") {
-    return <div className="max-w-md mx-auto px-4 py-16 text-center">...</div>;
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 text-center">
+        <p className="mb-4" style={{ color: "var(--color-ink)" }}>{t("adminNeedsLogin")}</p>
+        <Link href="/login" className="inline-block rounded-lg px-6 py-3 font-semibold text-sm text-white" style={{ background: "var(--color-accent)" }}>
+          {t("login")}
+        </Link>
+      </div>
+    );
+  }
+
+  if (user.role !== "admin") {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 text-center">
+        <p className="mb-2 font-semibold" style={{ color: "var(--color-accent)" }}>{t("adminOnly")}</p>
+        <p className="text-sm mb-4" style={{ color: "var(--color-ink-soft)" }}>
+          {t("loggedInAs")}: {user.email} ({user.role})
+        </p>
+        <Link href="/" className="text-sm font-semibold" style={{ color: "var(--color-brand)" }}>{t("backHome")}</Link>
+      </div>
+    );
   }
 
   const links = [
