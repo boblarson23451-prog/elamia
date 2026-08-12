@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 
+export async function GET(req, { params }) {
+  try { await requireAdmin(); } catch (e) {
+    return NextResponse.json({ error: "unauthorized" }, { status: e.status || 401 });
+  }
+  const { id } = await params;
+  const product = db.prepare("SELECT * FROM products WHERE id = ?").get(id);
+  if (!product) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  return NextResponse.json({ product });
+}
+
 export async function PATCH(req, { params }) {
   try {
     await requireAdmin();

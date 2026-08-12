@@ -15,5 +15,11 @@
  * any orders at all.
  */
 export function isCodEnabled() {
-  return process.env.COD_ENABLED !== "false";
+  // Cash on Delivery is DISABLED by default at the merchant's request.
+  // Set COD_ENABLED=true to bring it back.
+  //
+  // ⚠️ With COD off, customers can only pay through an online gateway. If no
+  // gateway is configured and working, NO ONE CAN PLACE AN ORDER — checkout
+  // will show "no payment method available".
+  return process.env.COD_ENABLED === "true";
 }

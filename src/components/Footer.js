@@ -24,7 +24,7 @@ export default function Footer() {
         </div>
         <div>
           <div className="font-semibold mb-2">🇩🇿 58 wilayas</div>
-          <p style={{ color: "var(--color-ink-soft)" }}>{t("cod")}</p>
+          <p style={{ color: "var(--color-ink-soft)" }}>{t("freeShippingBanner")}</p>
         </div>
         <div>
           <div className="font-semibold mb-2">{t("categories")}</div>

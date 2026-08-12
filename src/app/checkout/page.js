@@ -18,7 +18,7 @@ export default function CheckoutPage() {
   });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [gateways, setGateways] = useState({ chargily: false, sofizpay: false, cod: true });
+  const [gateways, setGateways] = useState({ chargily: false, sofizpay: false, cod: false });
   const [shipping, setShipping] = useState(null);
   const [customs, setCustoms] = useState(null);
   const [quoting, setQuoting] = useState(false);

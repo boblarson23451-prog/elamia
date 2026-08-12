@@ -53,8 +53,11 @@ export async function POST(req) {
     }
   }
 
-  if (paymentMethod === "cod" && !isCodEnabled()) {
-    return NextResponse.json({ error: "cod_disabled" }, { status: 400 });
+  const allowedPayments = ["sofizpay", "chargily", ...(isCodEnabled() ? ["cod"] : [])];
+  if (!allowedPayments.includes(paymentMethod)) {
+    // Never silently fall back to COD: an order recorded as "pay on delivery"
+    // when COD is switched off would be shipped with no way to collect.
+    return NextResponse.json({ error: paymentMethod === "cod" ? "cod_disabled" : "invalid_payment_method" }, { status: 400 });
   }
 
   const wantsOnlinePayment = paymentMethod === "chargily" || paymentMethod === "sofizpay";
@@ -133,7 +136,7 @@ export async function POST(req) {
       .run(
         user.id, subtotal, shippingCost, total, fullName, phone, wilaya,
         deliveryType === "pickup" ? (pickupPoint.address_fr || "") : address,
-        paymentMethod || "cod", shippingCarrier, deliveryType,
+        paymentMethod, shippingCarrier, deliveryType,
         deliveryType === "pickup" ? pickupPoint.id : null
       );
 

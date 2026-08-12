@@ -124,8 +124,8 @@ Conformément à la loi 18-05, ne peuvent faire l'objet de transactions en ligne
       {
         h_fr: "5. Paiement",
         h_ar: "5. الدفع",
-        body_fr: `Les moyens de paiement proposés sont indiqués lors de la commande. Le paiement en ligne s'effectue via une plateforme de paiement électronique agréée. La commande n'est traitée qu'après confirmation effective du paiement, sauf en cas de paiement à la livraison lorsque celui-ci est proposé.`,
-        body_ar: `تُبيَّن وسائل الدفع المتاحة عند الطلب. يتم الدفع الإلكتروني عبر منصة دفع إلكتروني معتمدة. لا تُعالَج الطلبية إلا بعد التأكيد الفعلي للدفع، باستثناء حالة الدفع عند الاستلام عندما تكون متاحة.`,
+        body_fr: `Les moyens de paiement proposés sont indiqués lors de la commande. Le paiement s'effectue en ligne via une plateforme de paiement électronique agréée. La commande n'est traitée qu'après confirmation effective du paiement. Le paiement à la livraison n'est pas proposé.`,
+        body_ar: `تُبيَّن وسائل الدفع المتاحة عند الطلب. يتم الدفع عبر الإنترنت من خلال منصة دفع إلكتروني معتمدة. لا تُعالَج الطلبية إلا بعد التأكيد الفعلي للدفع. الدفع عند الاستلام غير متاح.`,
       },
       {
         h_fr: "6. Livraison",
