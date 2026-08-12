@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { syncCommissionForOrder } from "@/lib/affiliate";
 
 export async function PATCH(req, { params }) {
   try {
@@ -17,6 +18,9 @@ export async function PATCH(req, { params }) {
   }
 
   db.prepare("UPDATE orders SET status = ? WHERE id = ?").run(status, id);
+
+  // Commission follows the order: approved on delivery, cancelled on cancel.
+  try { syncCommissionForOrder(Number(id), status); } catch {}
 
   return NextResponse.json({ ok: true });
 }

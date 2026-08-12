@@ -7,6 +7,8 @@ import { computeShipping, totalWeightGrams, CARRIERS } from "@/lib/shipping";
 import { getPickupPointById } from "@/lib/pickup-points";
 import { evaluateCustoms } from "@/lib/customs";
 import { variantLabel } from "@/lib/variants";
+import { cookies } from "next/headers";
+import { getAffiliateByCode, createCommission, AFFILIATE_COOKIE } from "@/lib/affiliate";
 import { isCodEnabled } from "@/lib/payment-config";
 
 export async function GET() {
@@ -168,6 +170,23 @@ export async function POST(req) {
   });
 
   const orderId = createOrder();
+
+  // Affiliate attribution: last-click cookie, read at purchase time.
+  // The commission starts as 'pending' and is only approved once the order is
+  // marked delivered (see syncCommissionForOrder).
+  try {
+    const store = await cookies();
+    const refCode = store.get(AFFILIATE_COOKIE)?.value;
+    if (refCode) {
+      const aff = getAffiliateByCode(refCode);
+      if (aff) {
+        db.prepare("UPDATE orders SET affiliate_id = ? WHERE id = ?").run(aff.id, orderId);
+        createCommission(orderId, aff.id, subtotal, user.id);
+      }
+    }
+  } catch {
+    // Attribution must never break checkout.
+  }
 
   if (!wantsOnlinePayment) {
     return NextResponse.json({ orderId });

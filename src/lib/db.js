@@ -99,6 +99,41 @@ CREATE TABLE IF NOT EXISTS product_variants (
 
 CREATE INDEX IF NOT EXISTS idx_variants_product ON product_variants(product_id);
 
+CREATE TABLE IF NOT EXISTS affiliates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  code TEXT UNIQUE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  commission_rate REAL NOT NULL DEFAULT 0.05,
+  payout_method TEXT,
+  payout_details TEXT,
+  phone TEXT,
+  audience TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS affiliate_clicks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  affiliate_id INTEGER NOT NULL REFERENCES affiliates(id) ON DELETE CASCADE,
+  landing_path TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_clicks_aff ON affiliate_clicks(affiliate_id, created_at);
+
+CREATE TABLE IF NOT EXISTS affiliate_commissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  affiliate_id INTEGER NOT NULL REFERENCES affiliates(id),
+  order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  order_subtotal INTEGER NOT NULL,
+  rate REAL NOT NULL,
+  amount INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  paid_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(order_id)
+);
+CREATE INDEX IF NOT EXISTS idx_comm_aff ON affiliate_commissions(affiliate_id, status);
+
 CREATE TABLE IF NOT EXISTS cart_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -167,6 +202,7 @@ ensureColumn("orders", "delivery_type", "delivery_type TEXT NOT NULL DEFAULT 'ho
 ensureColumn("orders", "pickup_point_id", "pickup_point_id TEXT");
 ensureColumn("orders", "subtotal", "subtotal INTEGER NOT NULL DEFAULT 0");
 ensureColumn("products", "image_urls", "image_urls TEXT");
+ensureColumn("orders", "affiliate_id", "affiliate_id INTEGER REFERENCES affiliates(id)");
 ensureColumn("products", "option1_name_fr", "option1_name_fr TEXT");
 ensureColumn("products", "option1_name_ar", "option1_name_ar TEXT");
 ensureColumn("products", "option2_name_fr", "option2_name_fr TEXT");

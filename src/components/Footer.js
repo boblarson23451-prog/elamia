@@ -32,7 +32,8 @@ export default function Footer() {
         </div>
         <div>
           <div className="font-semibold mb-2">{t("becomeVendorCta")}</div>
-          <a href="/sell" className="hover:underline" style={{ color: "var(--color-brand)" }}>{t("sellOnElalamia")}</a>
+          <a href="/sell" className="hover:underline block" style={{ color: "var(--color-brand)" }}>{t("sellOnElalamia")}</a>
+          <a href="/affiliate" className="hover:underline block mt-1" style={{ color: "var(--color-brand)" }}>{t("affiliateProgram")}</a>
         </div>
         <div>
           <div className="font-semibold mb-2">{t("legal")}</div>

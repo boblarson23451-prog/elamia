@@ -45,6 +45,7 @@ export default function AdminLayout({ children }) {
     { href: "/admin/products", label: t("manageProducts") },
     { href: "/admin/orders", label: t("manageOrders") },
     { href: "/admin/vendors", label: t("manageVendors") },
+    { href: "/admin/affiliates", label: t("manageAffiliates") },
   ];
 
   return (
