@@ -61,10 +61,16 @@ export function replaceVariants(productId, variants) {
   db.transaction(() => {
     del.run(productId);
     (variants || []).forEach((v, i) => {
+      // Trim option values: "S" and "S " would otherwise render as two
+      // separate buttons on the product page.
+      const clean = (x) => {
+        const t = String(x ?? "").trim().replace(/\s+/g, " ");
+        return t === "" ? null : t;
+      };
       ins.run(
         productId,
-        v.v1_fr || null, v.v1_ar || null,
-        v.v2_fr || null, v.v2_ar || null,
+        clean(v.v1_fr), clean(v.v1_ar),
+        clean(v.v2_fr), clean(v.v2_ar),
         v.sku || null,
         v.price === "" || v.price == null ? null : parseInt(v.price, 10),
         parseInt(v.stock, 10) || 0,

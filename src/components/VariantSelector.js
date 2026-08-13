@@ -12,25 +12,37 @@ export default function VariantSelector({ product, variants, selected, onSelect 
   const { t, lang } = useLang();
   if (!variants || variants.length === 0) return null;
 
-  const val = (v, n) => (lang === "ar" ? v[`v${n}_ar`] || v[`v${n}_fr`] : v[`v${n}_fr`] || v[`v${n}_ar`]);
+  const raw = (v, n) => (lang === "ar" ? v[`v${n}_ar`] || v[`v${n}_fr`] : v[`v${n}_fr`] || v[`v${n}_ar`]);
+  // Group case- and whitespace-insensitively: existing data may contain
+  // "S" and "s " which should be one button, not three.
+  const val = (v, n) => {
+    const x = raw(v, n);
+    return x == null ? x : String(x).trim().replace(/\s+/g, " ");
+  };
+  const key = (x) => (x == null ? x : String(x).trim().toLowerCase());
   const optName = (n) =>
     (lang === "ar" ? product[`option${n}_name_ar`] || product[`option${n}_name_fr`]
                    : product[`option${n}_name_fr`] || product[`option${n}_name_ar`]) ||
     (n === 1 ? t("option1Default") : t("option2Default"));
 
-  const level1 = [...new Set(variants.map((v) => val(v, 1)).filter(Boolean))];
+  const uniq = (arr) => {
+    const seen = new Map();
+    for (const x of arr) if (x && !seen.has(key(x))) seen.set(key(x), x);
+    return [...seen.values()];
+  };
+  const level1 = uniq(variants.map((v) => val(v, 1)));
   const hasLevel2 = variants.some((v) => val(v, 2));
 
   const sel1 = selected ? val(selected, 1) : null;
   const level2 = hasLevel2
-    ? [...new Set(variants.filter((v) => !sel1 || val(v, 1) === sel1).map((v) => val(v, 2)).filter(Boolean))]
+    ? uniq(variants.filter((v) => !sel1 || key(val(v, 1)) === key(sel1)).map((v) => val(v, 2)))
     : [];
 
   const findVariant = (v1, v2) =>
-    variants.find((v) => (!v1 || val(v, 1) === v1) && (!v2 || val(v, 2) === v2));
+    variants.find((v) => (!v1 || key(val(v, 1)) === key(v1)) && (!v2 || key(val(v, 2)) === key(v2)));
 
   const stockFor = (v1, v2) => {
-    const matches = variants.filter((v) => (!v1 || val(v, 1) === v1) && (!v2 || val(v, 2) === v2));
+    const matches = variants.filter((v) => (!v1 || key(val(v, 1)) === key(v1)) && (!v2 || key(val(v, 2)) === key(v2)));
     return matches.reduce((s, v) => s + v.stock, 0);
   };
 
@@ -70,7 +82,7 @@ export default function VariantSelector({ product, variants, selected, onSelect 
             const swatch = variants.find((v) => val(v, 1) === l1)?.swatch;
             return pill(
               l1,
-              sel1 === l1,
+              key(sel1) === key(l1),
               stockFor(l1, null) <= 0,
               () => onSelect(findVariant(l1, hasLevel2 ? null : undefined) || null),
               swatch
@@ -91,7 +103,7 @@ export default function VariantSelector({ product, variants, selected, onSelect 
             {level2.map((l2) =>
               pill(
                 l2,
-                selected && val(selected, 2) === l2,
+                selected && key(val(selected, 2)) === key(l2),
                 stockFor(sel1, l2) <= 0,
                 () => onSelect(findVariant(sel1, l2) || null)
               )
