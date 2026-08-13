@@ -8,6 +8,16 @@ const LangContext = createContext(null);
 export function LangProvider({ children }) {
   const [lang, setLang] = useState("ar");
   const [ready, setReady] = useState(false);
+  const [overrides, setOverrides] = useState({});
+
+  // Admin-edited text overrides the built-in translations. Fetched once;
+  // a failure here is harmless because the defaults still apply.
+  useEffect(() => {
+    fetch("/api/content")
+      .then((r) => r.json())
+      .then((d) => setOverrides(d.overrides || {}))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("elalamia_lang") : null;
@@ -22,7 +32,11 @@ export function LangProvider({ children }) {
     localStorage.setItem("elalamia_lang", lang);
   }, [lang, ready]);
 
-  const t = (key) => DICT[lang]?.[key] || key;
+  const t = (key) => {
+    const o = overrides[key];
+    const custom = lang === "ar" ? o?.ar : o?.fr;
+    return custom || DICT[lang]?.[key] || key;
+  };
   const field = (obj, base) => obj[`${base}_${lang}`];
 
   return (

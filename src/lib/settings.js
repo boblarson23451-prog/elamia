@@ -46,6 +46,20 @@ export const DEFAULTS = {
 
   // Returns
   return_window_days: 15,
+
+  // Company identity — required on legal pages by Law 18-05.
+  // Empty means "not filled in yet" and the legal pages show a warning.
+  company_legal_name: "",
+  company_legal_form: "",
+  company_address: "",
+  company_wilaya: "",
+  company_rc: "",
+  company_nif: "",
+  company_nis: "",
+  company_phone: "",
+  company_email: "",
+  company_director: "",
+  company_hosting: "",
 };
 
 /** Rules that keep a typo from becoming an expensive mistake. */

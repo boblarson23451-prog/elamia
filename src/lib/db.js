@@ -99,6 +99,13 @@ CREATE TABLE IF NOT EXISTS product_variants (
 
 CREATE INDEX IF NOT EXISTS idx_variants_product ON product_variants(product_id);
 
+CREATE TABLE IF NOT EXISTS content (
+  key TEXT PRIMARY KEY,
+  value_fr TEXT,
+  value_ar TEXT,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL,

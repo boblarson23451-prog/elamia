@@ -51,6 +51,22 @@ const GROUPS = [
       { k: "affiliate_payout_terms_ar", l_fr: "Conditions de paiement affiliés (AR)", l_ar: "شروط الدفع (عربي)", text: true },
     ],
   },
+  {
+    title_fr: "Identité de l'entreprise (pages légales)", title_ar: "هوية الشركة (الصفحات القانونية)",
+    fields: [
+      { k: "company_legal_name", l_fr: "Dénomination sociale", l_ar: "التسمية الاجتماعية", text: true },
+      { k: "company_legal_form", l_fr: "Forme juridique (EURL, SARL…)", l_ar: "الشكل القانوني", text: true },
+      { k: "company_address", l_fr: "Adresse du siège", l_ar: "عنوان المقر", text: true },
+      { k: "company_wilaya", l_fr: "Wilaya", l_ar: "الولاية", text: true },
+      { k: "company_rc", l_fr: "N° registre de commerce", l_ar: "رقم السجل التجاري", text: true },
+      { k: "company_nif", l_fr: "NIF", l_ar: "رقم التعريف الجبائي", text: true },
+      { k: "company_nis", l_fr: "NIS", l_ar: "رقم التعريف الإحصائي", text: true },
+      { k: "company_phone", l_fr: "Téléphone", l_ar: "الهاتف", text: true },
+      { k: "company_email", l_fr: "E-mail de contact", l_ar: "البريد الإلكتروني", text: true },
+      { k: "company_director", l_fr: "Directeur de la publication", l_ar: "مدير النشر", text: true },
+      { k: "company_hosting", l_fr: "Hébergeur (nom et pays)", l_ar: "المستضيف", text: true },
+    ],
+  },
 ];
 
 export default function AdminSettingsPage() {

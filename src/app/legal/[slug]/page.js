@@ -4,19 +4,26 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { useLang } from "@/context/LangContext";
-import { LEGAL_DOCS, renderTemplate, hasIncompleteFields } from "@/lib/legal-content";
+import { LEGAL_DOCS, renderTemplate, hasIncompleteFields, COMPANY_FALLBACK } from "@/lib/legal-content";
+import { useEffect, useState } from "react";
 
 const ORDER = ["mentions-legales", "cgv", "retours", "confidentialite"];
 
 export default function LegalPage() {
   const { slug } = useParams();
   const { lang } = useLang();
+  const [company, setCompany] = useState(COMPANY_FALLBACK);
+
+  useEffect(() => {
+    fetch("/api/legal").then((r) => r.json()).then((d) => d.company && setCompany(d.company)).catch(() => {});
+  }, []);
+
   const doc = LEGAL_DOCS[slug];
 
   if (!doc) return notFound();
 
   const title = lang === "ar" ? doc.title_ar : doc.title_fr;
-  const incomplete = hasIncompleteFields();
+  const incomplete = hasIncompleteFields(company);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
@@ -68,7 +75,7 @@ export default function LegalPage() {
               className="text-sm leading-relaxed whitespace-pre-line"
               style={{ color: "var(--color-ink-soft)" }}
             >
-              {renderTemplate(lang === "ar" ? sec.body_ar : sec.body_fr)}
+              {renderTemplate(lang === "ar" ? sec.body_ar : sec.body_fr, company)}
             </div>
           </section>
         ))}

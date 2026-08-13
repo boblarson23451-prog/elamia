@@ -21,7 +21,7 @@
  * public site — that is deliberate, so nothing ships half-filled by accident.
  */
 
-export const COMPANY = {
+export const COMPANY_FALLBACK = {
   legalName: "À COMPLÉTER — dénomination sociale",
   tradeName: "ELALAMIA",
   legalForm: "À COMPLÉTER — ex. EURL / SARL / auto-entrepreneur",
@@ -283,11 +283,31 @@ Ces données servent exclusivement à : créer et gérer votre compte, traiter e
   },
 };
 
-/** Fills {placeholders} from COMPANY and flags anything still incomplete. */
-export function renderTemplate(text) {
-  return text.replace(/\{(\w+)\}/g, (m, key) => COMPANY[key] ?? m);
+/** Builds the company block from admin settings, falling back to placeholders. */
+export function companyFrom(settings) {
+  const map = {
+    legalName: settings.company_legal_name,
+    legalForm: settings.company_legal_form,
+    address: settings.company_address,
+    wilaya: settings.company_wilaya,
+    rc: settings.company_rc,
+    nif: settings.company_nif,
+    nis: settings.company_nis,
+    phone: settings.company_phone,
+    email: settings.company_email,
+    director: settings.company_director,
+    hostingProvider: settings.company_hosting,
+  };
+  const out = { ...COMPANY_FALLBACK };
+  for (const [k, v] of Object.entries(map)) if (v && String(v).trim()) out[k] = String(v).trim();
+  return out;
 }
 
-export function hasIncompleteFields() {
-  return Object.values(COMPANY).some((v) => String(v).includes("À COMPLÉTER"));
+/** Fills {placeholders} from a company object. */
+export function renderTemplate(text, company = COMPANY_FALLBACK) {
+  return text.replace(/\{(\w+)\}/g, (m, key) => company[key] ?? m);
+}
+
+export function hasIncompleteFields(company = COMPANY_FALLBACK) {
+  return Object.values(company).some((v) => String(v).includes("À COMPLÉTER"));
 }
