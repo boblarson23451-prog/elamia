@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useLang } from "@/context/LangContext";
 import { formatPrice } from "@/lib/i18n";
-import { CARRIERS } from "@/lib/shipping";
 import { getPickupPointById } from "@/lib/pickup-points";
 
 const PAYMENT_METHOD_LABELS = { cod: "cod", chargily: "payChargily", sofizpay: "paySofizpay" };
@@ -115,15 +114,11 @@ function OrderDetailContent() {
           <div>{t("paymentMethod")}: {t(PAYMENT_METHOD_LABELS[order.payment_method] || "cod")}</div>
           <div>
             {t("shippingMethod")}:{" "}
-            {CARRIERS[order.shipping_carrier]
-              ? (lang === "ar" ? CARRIERS[order.shipping_carrier].label_ar : CARRIERS[order.shipping_carrier].label_fr)
-              : order.shipping_carrier}
+            {(lang === "ar" ? order.carrier_label_ar : order.carrier_label_fr) || order.shipping_carrier}
           </div>
           <div>
             {t("estimatedDelivery")}:{" "}
-            {CARRIERS[order.shipping_carrier]
-              ? (lang === "ar" ? CARRIERS[order.shipping_carrier].eta_ar : CARRIERS[order.shipping_carrier].eta_fr)
-              : "—"}
+            {(lang === "ar" ? order.carrier_eta_ar : order.carrier_eta_fr) || "—"}
           </div>
           <div>
             {t("deliveryType")}: {order.delivery_type === "pickup" ? t("pickupDelivery") : t("homeDelivery")}

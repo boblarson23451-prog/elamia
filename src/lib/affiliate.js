@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { getSettings } from "./settings";
 
 /**
  * Affiliate programme.
@@ -17,9 +18,11 @@ import { db } from "./db";
  * earn margin on delivery fees, so you shouldn't pay commission on them.
  */
 
-export const ATTRIBUTION_DAYS = 30;
+export const attributionDays = () => getSettings().attribution_days;
+export const ATTRIBUTION_DAYS = 30; // fallback for cookie maxAge at import time
 export const AFFILIATE_COOKIE = "elalamia_ref";
-export const DEFAULT_COMMISSION_RATE = 0.05; // 5%
+export const defaultCommissionRate = () => getSettings().default_commission_rate;
+export const DEFAULT_COMMISSION_RATE = 0.05;
 
 /** Generates a short, unambiguous referral code (no 0/O/1/I confusion). */
 export function generateCode(seed = "") {

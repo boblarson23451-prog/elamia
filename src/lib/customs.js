@@ -27,21 +27,23 @@
  *    getting this wrong means either seized shipments or lost sales.
  */
 
-export const USD_TO_DZD = Number(process.env.CUSTOMS_USD_RATE) || 135;
+import { getSettings } from "./settings";
 
-export const DUTY_THRESHOLD_USD = 300;
-export const DUTY_RATE = 0.30;
-export const DECLARATION_THRESHOLD_USD = 500;
-export const SAME_GENRE_MAX = 2; // 3+ of one genre is liable to seizure
-
-export const RETURN_WINDOW_DAYS = 15;
+// All thresholds now come from the admin Settings page. Change them there,
+// not here — no deploy required.
+export const usdRate = () => getSettings().customs_usd_rate;
+export const dutyThresholdUsd = () => getSettings().duty_threshold_usd;
+export const dutyRate = () => getSettings().duty_rate;
+export const declarationThresholdUsd = () => getSettings().declaration_threshold_usd;
+export const sameGenreMax = () => getSettings().same_genre_max;
+export const returnWindowDays = () => getSettings().return_window_days;
 
 export function usdToDzd(usd) {
-  return Math.round(usd * USD_TO_DZD);
+  return Math.round(usd * usdRate());
 }
 
 export function dzdToUsd(dzd) {
-  return dzd / USD_TO_DZD;
+  return dzd / usdRate();
 }
 
 /**
@@ -66,33 +68,33 @@ export function evaluateCustoms(items) {
     byCategory.set(key, prev);
   }
   for (const [, info] of byCategory) {
-    if (info.qty > SAME_GENRE_MAX) {
+    if (info.qty > sameGenreMax()) {
       blockReasons.push({
         code: "same_genre_limit",
         category_fr: info.name_fr,
         category_ar: info.name_ar,
         qty: info.qty,
-        max: SAME_GENRE_MAX,
+        max: sameGenreMax(),
       });
     }
   }
 
   // Duty threshold.
-  if (valueUsd > DUTY_THRESHOLD_USD) {
-    estimatedDuty = Math.round(subtotalDzd * DUTY_RATE);
+  if (valueUsd > dutyThresholdUsd()) {
+    estimatedDuty = Math.round(subtotalDzd * dutyRate());
     warnings.push({
       code: "duty_applies",
-      thresholdUsd: DUTY_THRESHOLD_USD,
-      ratePct: DUTY_RATE * 100,
+      thresholdUsd: dutyThresholdUsd(),
+      ratePct: dutyRate() * 100,
       estimatedDutyDzd: estimatedDuty,
     });
   }
 
   // Declaration threshold.
-  if (valueUsd > DECLARATION_THRESHOLD_USD) {
+  if (valueUsd > declarationThresholdUsd()) {
     warnings.push({
       code: "declaration_required",
-      thresholdUsd: DECLARATION_THRESHOLD_USD,
+      thresholdUsd: declarationThresholdUsd(),
     });
   }
 

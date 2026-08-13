@@ -1,5 +1,10 @@
+import { getSettings } from "./settings";
+
 /**
  * Shipping engine for ELALAMIA.
+ *
+ * Rates now come from the admin Settings page (database), not this file.
+ * The values below are only fallbacks for a fresh install.
  *
  * Pricing model: a per-carrier base fee + a per-kilogram rate, multiplied by
  * a zone factor (shipping to the far south of Algeria genuinely costs more
@@ -27,36 +32,50 @@ export function wilayaZone(wilaya) {
   return 1;
 }
 
-const ZONE_MULTIPLIER = { 1: 1, 2: 1.25, 3: 1.6 };
 
-export const CARRIERS = {
-  ups: {
-    id: "ups",
-    label_fr: "UPS — Express",
-    label_ar: "UPS — سريع",
-    eta_fr: "7 à 10 jours ouvrables",
-    eta_ar: "من 7 إلى 10 أيام عمل",
-    baseFee: 900,      // DA, replace with your contract rate
-    perKg: 320,        // DA per kg
-    minWeightKg: 0.5,
-  },
-  ems: {
-    id: "ems",
-    label_fr: "EMS — Économique",
-    label_ar: "EMS — اقتصادي",
-    eta_fr: "15 à 45 jours ouvrables",
-    eta_ar: "من 15 إلى 45 يوم عمل",
-    baseFee: 450,
-    perKg: 140,
-    minWeightKg: 0.5,
-  },
-};
+
+/** Carrier definitions, priced from live settings. */
+export function getCarriers() {
+  const s = getSettings();
+  return {
+    ups: {
+      id: "ups",
+      label_fr: "UPS — Express",
+      label_ar: "UPS — سريع",
+      eta_fr: s.ups_eta_fr,
+      eta_ar: s.ups_eta_ar,
+      baseFee: s.ups_base_fee,
+      perKg: s.ups_per_kg,
+      minWeightKg: 0.5,
+    },
+    ems: {
+      id: "ems",
+      label_fr: "EMS — Économique",
+      label_ar: "EMS — اقتصادي",
+      eta_fr: s.ems_eta_fr,
+      eta_ar: s.ems_eta_ar,
+      baseFee: s.ems_base_fee,
+      perKg: s.ems_per_kg,
+      minWeightKg: 0.5,
+    },
+  };
+}
+
+/** Back-compat: existing imports of CARRIERS still work. */
+export const CARRIERS = new Proxy({}, {
+  get: (_, k) => getCarriers()[k],
+  has: (_, k) => k in getCarriers(),
+  ownKeys: () => Reflect.ownKeys(getCarriers()),
+  getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
+});
 
 /** Pickup-point delivery is cheaper than door-to-door (fewer last-mile stops). */
-const PICKUP_DISCOUNT_RATE = 0.25; // 25% off the computed shipping fee
 
-/** Orders at or above this subtotal ship free (set to null to disable). */
-export const FREE_SHIPPING_THRESHOLD = 15000; // DA
+
+/** Orders at or above this subtotal ship free (0 disables). */
+export function freeShippingThreshold() {
+  return getSettings().free_shipping_threshold;
+}
 
 export const DEFAULT_ITEM_WEIGHT_GRAMS = 500;
 
@@ -78,17 +97,18 @@ export function totalWeightGrams(items) {
  * @param {number} opts.subtotal order subtotal, for the free-shipping threshold
  */
 export function computeShipping({ weightGrams, carrier, wilaya, deliveryType, subtotal }) {
-  const c = CARRIERS[carrier];
+  const settings = getSettings();
+  const c = getCarriers()[carrier];
   if (!c) return null;
 
-  if (FREE_SHIPPING_THRESHOLD != null && subtotal >= FREE_SHIPPING_THRESHOLD) {
-    return 0;
-  }
+  const threshold = settings.free_shipping_threshold;
+  if (threshold > 0 && subtotal >= threshold) return 0;
 
+  const zoneMultiplier = { 1: 1, 2: settings.zone2_multiplier, 3: settings.zone3_multiplier };
   const weightKg = Math.max(c.minWeightKg, (weightGrams || 0) / 1000);
   const zone = wilayaZone(wilaya);
-  const raw = (c.baseFee + c.perKg * weightKg) * (ZONE_MULTIPLIER[zone] || 1);
-  const afterDelivery = deliveryType === "pickup" ? raw * (1 - PICKUP_DISCOUNT_RATE) : raw;
+  const raw = (c.baseFee + c.perKg * weightKg) * (zoneMultiplier[zone] || 1);
+  const afterDelivery = deliveryType === "pickup" ? raw * (1 - settings.pickup_discount_rate) : raw;
 
   // Round up to the nearest 10 DA so totals stay tidy.
   return Math.ceil(afterDelivery / 10) * 10;
@@ -96,7 +116,7 @@ export function computeShipping({ weightGrams, carrier, wilaya, deliveryType, su
 
 /** Returns both carrier options priced for a given cart, for the checkout UI. */
 export function shippingQuotes({ weightGrams, wilaya, deliveryType, subtotal }) {
-  return Object.values(CARRIERS).map((c) => ({
+  return Object.values(getCarriers()).map((c) => ({
     id: c.id,
     label_fr: c.label_fr,
     label_ar: c.label_ar,
