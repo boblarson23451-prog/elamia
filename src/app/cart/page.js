@@ -51,7 +51,12 @@ export default function CartPage() {
               style={{ background: "var(--color-paper)", borderColor: "var(--color-line)" }}
             >
               <Link href={`/products/${item.slug}`} className="shrink-0 w-20 h-20 rounded-lg overflow-hidden">
-                <ProductImage seed={item.image_seed} alt={field(item, "name")} className="w-full h-full object-cover" />
+                <ProductImage
+                  seed={item.image_seed}
+                  urls={item.variant_image || item.image_urls}
+                  alt={field(item, "name")}
+                  className="w-full h-full object-cover"
+                />
               </Link>
               <div className="flex-1 min-w-0">
                 <Link href={`/products/${item.slug}`} className="text-sm font-medium line-clamp-2" style={{ color: "var(--color-ink)" }}>

@@ -75,6 +75,7 @@ export async function POST(req) {
               COALESCE(v.price, p.price) as price,
               COALESCE(v.stock, p.stock) as stock,
               COALESCE(v.weight_grams, p.weight_grams) as weight_grams,
+              COALESCE(v.image_url, p.image_urls) as image_url, p.image_seed,
               v.v1_fr, v.v1_ar, v.v2_fr, v.v2_ar
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
@@ -144,8 +145,8 @@ export async function POST(req) {
 
     const insertItem = db.prepare(
       `INSERT INTO order_items
-         (order_id, product_id, vendor_id, variant_id, variant_label_fr, variant_label_ar, name_ar, name_fr, price, quantity)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         (order_id, product_id, vendor_id, variant_id, variant_label_fr, variant_label_ar, name_ar, name_fr, price, quantity, image_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     for (const item of cartItems) {
       // Snapshot the variant label onto the order line: if the variant is
@@ -154,7 +155,10 @@ export async function POST(req) {
       insertItem.run(
         orderId, item.product_id, item.vendor_id || null, item.variant_id || null,
         variantLabel(item, "fr"), variantLabel(item, "ar"),
-        item.name_ar, item.name_fr, item.price, item.quantity
+        item.name_ar, item.name_fr, item.price, item.quantity,
+        // Snapshot the image so an old order still shows what was bought,
+        // even if the product's photos are changed later.
+        (item.image_url || "").split(/[\n,]+/)[0] || null
       );
 
       if (item.variant_id) {

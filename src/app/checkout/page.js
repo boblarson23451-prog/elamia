@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLang } from "@/context/LangContext";
 import { useCart } from "@/context/CartContext";
 import { WILAYAS, formatPrice } from "@/lib/i18n";
+import ProductImage from "@/components/ProductImage";
 import CustomsNotice from "@/components/CustomsNotice";
 
 export default function CheckoutPage() {
@@ -228,8 +229,16 @@ export default function CheckoutPage() {
           <h3 className="font-semibold text-sm mb-3">{t("cart")} ({items.length})</h3>
           <div className="flex flex-col gap-2 mb-4 max-h-56 overflow-y-auto">
             {items.map((i) => (
-              <div key={i.id} className="flex justify-between text-xs" style={{ color: "var(--color-ink-soft)" }}>
-                <span className="line-clamp-1">{i.quantity}× {lang === "ar" ? i.name_ar : i.name_fr}</span>
+              <div key={i.id} className="flex items-center gap-2 text-xs" style={{ color: "var(--color-ink-soft)" }}>
+                <div className="w-9 h-9 rounded overflow-hidden shrink-0" style={{ background: "var(--color-cream)" }}>
+                  <ProductImage
+                    seed={i.image_seed}
+                    urls={i.variant_image || i.image_urls}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <span className="line-clamp-1 flex-1">{i.quantity}× {lang === "ar" ? i.name_ar : i.name_fr}</span>
                 <span className="font-mono shrink-0">{formatPrice(i.price * i.quantity, lang)}</span>
               </div>
             ))}

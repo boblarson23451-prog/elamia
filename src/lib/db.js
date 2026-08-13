@@ -224,6 +224,7 @@ ensureColumn("cart_items", "variant_id", "variant_id INTEGER REFERENCES product_
 ensureColumn("order_items", "variant_id", "variant_id INTEGER");
 ensureColumn("order_items", "variant_label_fr", "variant_label_fr TEXT");
 ensureColumn("order_items", "variant_label_ar", "variant_label_ar TEXT");
+ensureColumn("order_items", "image_url", "image_url TEXT");
 
 /* cart_items originally carried UNIQUE(user_id, product_id), which makes it
  * impossible to hold the same product in two variants (e.g. a shirt in M and

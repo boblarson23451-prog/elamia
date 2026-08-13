@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useLang } from "@/context/LangContext";
 import { formatPrice } from "@/lib/i18n";
 import { getPickupPointById } from "@/lib/pickup-points";
+import ProductImage from "@/components/ProductImage";
 
 const PAYMENT_METHOD_LABELS = { cod: "cod", chargily: "payChargily", sofizpay: "paySofizpay" };
 const PAYMENT_STATUS_STYLE = {
@@ -162,9 +163,12 @@ function OrderDetailContent() {
 
         <div className="flex flex-col gap-2 border-t pt-3" style={{ borderColor: "var(--color-line)" }}>
           {items.map((it) => (
-            <div key={it.id} className="flex justify-between text-sm">
-              <span>{it.quantity}× {lang === "ar" ? it.name_ar : it.name_fr}{(lang === "ar" ? it.variant_label_ar : it.variant_label_fr) ? ` — ${lang === "ar" ? it.variant_label_ar : it.variant_label_fr}` : ""}</span>
-              <span className="font-mono">{formatPrice(it.price * it.quantity, lang)}</span>
+            <div key={it.id} className="flex items-center gap-2 text-sm">
+              <div className="w-10 h-10 rounded overflow-hidden shrink-0" style={{ background: "var(--color-cream)" }}>
+                <ProductImage seed={it.product_id} urls={it.image_url} alt="" className="w-full h-full object-cover" />
+              </div>
+              <span className="flex-1">{it.quantity}× {lang === "ar" ? it.name_ar : it.name_fr}{(lang === "ar" ? it.variant_label_ar : it.variant_label_fr) ? ` — ${lang === "ar" ? it.variant_label_ar : it.variant_label_fr}` : ""}</span>
+              <span className="font-mono shrink-0">{formatPrice(it.price * it.quantity, lang)}</span>
             </div>
           ))}
         </div>
